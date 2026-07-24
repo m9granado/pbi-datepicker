@@ -1,0 +1,26 @@
+{
+  "visual": {
+    "name": "pbi-datepicker",
+    "displayName": "DateX",
+    "guid": "pbiDatePickerPopupCF01",
+    "visualClassName": "Visual",
+    "version": "2.5.1.0",
+    "description": "DateX: Selector de rango de fechas con presets",
+    "supportUrl": "https://support.example.com",
+    "gitHubUrl": ""
+  },
+  "apiVersion": "5.1.0",
+  "author": {
+    "name": "M9Granado",
+    "email": "dev@example.com"
+  },
+  "assets": {
+    "icon": "assets/icon.svg"
+  },
+  "externalJS": [],
+  "style": "style/visual.css",
+  "capabilities": "capabilities.json",
+  "dependencies": "dependencies.json",
+  "stringResources": [],
+  "out": "dist"
+}

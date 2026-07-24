@@ -1,0 +1,78 @@
+{
+  "dataRoles": [
+    {
+      "name": "date",
+      "kind": "Grouping",
+      "displayName": "Date"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "categorical": {
+        "categories": {
+          "for": {
+            "in": "date"
+          },
+          "dataReductionAlgorithm": {
+            "sample": {
+              "count": 30000
+            }
+          }
+        }
+      }
+    }
+  ],
+  "objects": {
+    "general": {
+      "properties": {
+        "buttonText": { "type": { "text": true } },
+        "displayMode": { "type": { "text": true } },
+        "showLog": { "type": { "bool": true } },
+        "showButtonLabels": { "type": { "bool": true } },
+        "showSelectedPeriodBadge": { "type": { "bool": true } },
+        "fontSize": { "type": { "formatting": { "fontSize": true } } },
+        "fontFamily": { "type": { "text": true } },
+        "fontPreset": { "type": { "text": true } }
+      }
+    },
+    "navigation": {
+      "properties": {
+        "enableDateInputs": { "type": { "bool": true } },
+        "enableMonthNavigation": { "type": { "bool": true } },
+        "showGranularityYear": { "type": { "bool": true } },
+        "showGranularityMonth": { "type": { "bool": true } },
+        "showGranularityDay": { "type": { "bool": true } },
+        "showMonthSelectionBadge": { "type": { "bool": true } }
+      }
+    },
+    "presets": {
+      "properties": {
+        "showToday": { "type": { "bool": true } },
+        "showYesterday": { "type": { "bool": true } },
+        "showThisWeek": { "type": { "bool": true } },
+        "showLastWeek": { "type": { "bool": true } },
+        "showLast7": { "type": { "bool": true } },
+        "showLast30": { "type": { "bool": true } },
+        "showLast90": { "type": { "bool": true } },
+        "showThisMonth": { "type": { "bool": true } },
+        "showPrevMonth": { "type": { "bool": true } },
+        "showThisYear": { "type": { "bool": true } }
+      }
+    },
+    "comparisons": {
+      "properties": {
+        "enableVersus": { "type": { "bool": true } },
+        "showMTDvsPMTD": { "type": { "bool": true } },
+        "showYoY": { "type": { "bool": true } },
+        "showYTDvsYTD": { "type": { "bool": true } }
+      }
+    },
+    "restrictions": {
+      "properties": {
+        "minDate": { "type": { "text": true } },
+        "maxDate": { "type": { "text": true } }
+      }
+    }
+  },
+  "privileges": []
+}

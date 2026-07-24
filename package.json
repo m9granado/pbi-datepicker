@@ -1,0 +1,21 @@
+{
+  "name": "pbi-datepicker",
+  "version": "1.15.0",
+  "private": true,
+  "description": "Date range picker custom visual",
+  "scripts": {
+    "build": "pbiviz package",
+    "start": "pbiviz start"
+  },
+  "dependencies": {
+    "powerbi-models": "^1.15.2",
+    "powerbi-visuals-api": "~5.1.0",
+    "powerbi-visuals-utils-formattingmodel": "^6.2.2",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "18.2.66",
+    "@types/react-dom": "18.2.22"
+  }
+}

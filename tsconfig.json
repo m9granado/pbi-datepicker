@@ -1,0 +1,42 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "jsx": "react",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "declaration": false,
+    "sourceMap": true,
+    "outDir": "dist",
+    "typeRoots": [
+      "node_modules/@types"
+    ],
+    "strict": false,
+    "strictNullChecks": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "files": [
+    "src/visual.ts",
+    "src/settings.ts",
+    "src/ui/App.tsx",
+    "src/core/presets.ts",
+    "src/core/filters.ts",
+    "src/utils/dateHelpers.ts",
+    "src/hooks/useDateFilter.ts",
+    "src/hooks/useClickOutside.ts",
+    "src/components/DateInputs.tsx",
+    "src/components/PresetButtons.tsx",
+    "src/components/ComparisonPanel.tsx",
+    "src/components/MonthSelector.tsx",
+    "src/components/ActivityLog.tsx",
+    "src/components/FilterBadge.tsx",
+    "src/components/ComparisonBanner.tsx",
+    "src/components/MonthGrid.tsx",
+    "src/dialogs/MonthPickerDialog.tsx",
+    "src/dialogs/DatePickerDialog.tsx",
+    "src/types/images.d.ts"
+  ]
+}

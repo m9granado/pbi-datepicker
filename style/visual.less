@@ -1,0 +1,371 @@
+/* =================================================================== */
+/* ¡¡¡VERSIÓN 1.3.0 - CAMBIOS SUPER DRÁSTICOS!!!                     */
+/* =================================================================== */
+
+* {
+  box-sizing: border-box !important;
+}
+
+.pbi-datepicker { font-family: inherit; font-size: inherit; }
+
+/* =================================================================== */
+/* CONTENEDOR PRINCIPAL - IMPOSIBLE DE NO VER                         */
+/* =================================================================== */
+
+.pbi-datepicker.card {
+  background: linear-gradient(135deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4) !important;
+  border: 8px solid #E74C3C !important;
+  border-radius: 30px !important;
+  padding: 30px !important;
+  box-shadow: 0 10px 30px rgba(255, 0, 0, 0.5) !important;
+  animation: rainbow 2s linear infinite !important;
+  transform: scale(1.05) !important;
+}
+
+@keyframes rainbow {
+  0% { border-color: #FF0000; }
+  16% { border-color: #FF8000; }
+  33% { border-color: #FFFF00; }
+  50% { border-color: #00FF00; }
+  66% { border-color: #0080FF; }
+  83% { border-color: #8000FF; }
+  100% { border-color: #FF0000; }
+}
+
+/* =================================================================== */
+/* FILAS Y CONTROLES                                                  */
+/* =================================================================== */
+
+.row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 20px !important;
+  flex-wrap: wrap !important;
+  margin-bottom: 25px !important;
+  background: rgba(255, 255, 0, 0.3) !important;
+  border: 3px dashed #FF00FF !important;
+  padding: 15px !important;
+  border-radius: 15px !important;
+}
+
+/* =================================================================== */
+/* CAMPOS DE FECHA - SUPER OBVIOS                                     */
+/* =================================================================== */
+
+.field {
+  width: 200px !important;
+  height: 50px !important;
+  padding: 0 20px !important;
+  border: 5px solid #FF1744 !important;
+  border-radius: 25px !important;
+  background: linear-gradient(45deg, #FFEB3B, #FFC107) !important;
+  color: #8B0000 !important;
+  font-family: "Arial Black", sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 900 !important;
+  transition: all 0.3s ease-in-out !important;
+  box-shadow: 0 5px 15px rgba(255, 23, 68, 0.4) !important;
+  text-align: center !important;
+}
+
+.field:focus {
+  outline: none !important;
+  border-color: #00FF00 !important;
+  box-shadow: 0 0 0 5px rgba(0, 255, 0, 0.3), 0 5px 15px rgba(255, 23, 68, 0.4) !important;
+  background: linear-gradient(45deg, #00FF00, #32CD32) !important;
+  transform: scale(1.1) !important;
+}
+
+.field:hover:not(:focus) {
+  border-color: #FF6600 !important;
+  background: linear-gradient(45deg, #FF9800, #FF5722) !important;
+  transform: scale(1.05) !important;
+  color: #FFFFFF !important;
+}
+
+/* =================================================================== */
+/* SEPARADOR VISUAL                                                   */
+/* =================================================================== */
+
+.sep {
+  font-size: 30px !important;
+  font-weight: 900 !important;
+  color: #E91E63 !important;
+  user-select: none !important;
+  margin: 0 15px !important;
+  text-shadow: 2px 2px 4px rgba(233, 30, 99, 0.5) !important;
+  animation: pulse 1s ease-in-out infinite alternate !important;
+}
+
+@keyframes pulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.2); }
+}
+
+/* =================================================================== */
+/* ICONO DE LIMPIAR                                                   */
+/* =================================================================== */
+
+.icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 60px !important;
+  height: 60px !important;
+  border: 4px solid #9C27B0 !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #E1BEE7, #BA68C8) !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease-in-out !important;
+  box-shadow: 0 5px 15px rgba(156, 39, 176, 0.3) !important;
+}
+
+.icon:hover {
+  background: linear-gradient(135deg, #9C27B0, #7B1FA2) !important;
+  border-color: #4A148C !important;
+  transform: translateY(-5px) rotate(15deg) !important;
+  box-shadow: 0 8px 25px rgba(156, 39, 176, 0.5) !important;
+}
+
+.icon.ghost {
+  background: linear-gradient(135deg, #FFCDD2, #EF5350) !important;
+  border-color: #D32F2F !important;
+}
+
+.icon.ghost:hover {
+  background: linear-gradient(135deg, #F44336, #C62828) !important;
+  border-color: #B71C1C !important;
+  transform: translateY(-5px) rotate(-15deg) !important;
+}
+
+.ic-mask {
+  display: inline-block !important;
+  width: 24px !important;
+  height: 24px !important;
+  background-color: #4A148C !important;
+  -webkit-mask-size: contain !important;
+  mask-size: contain !important;
+  -webkit-mask-repeat: no-repeat !important;
+  mask-repeat: no-repeat !important;
+  -webkit-mask-position: center !important;
+  mask-position: center !important;
+  transition: background-color 0.3s ease-in-out !important;
+}
+
+.icon:hover .ic-mask {
+  background-color: #FFFFFF !important;
+}
+
+.icon.ghost .ic-mask {
+  background-color: #B71C1C !important;
+}
+
+.icon.ghost:hover .ic-mask {
+  background-color: #FFFFFF !important;
+}
+
+/* =================================================================== */
+/* CHIPS/BOTONES                                                      */
+/* =================================================================== */
+
+.chips {
+  display: flex !important;
+  gap: 15px !important;
+  flex-wrap: wrap !important;
+  margin-top: 15px !important;
+  background: rgba(255, 152, 0, 0.2) !important;
+  border: 2px solid #FF9800 !important;
+  border-radius: 20px !important;
+  padding: 15px !important;
+}
+
+.chip {
+  padding: 12px 20px !important;
+  border: 3px solid #FF5722 !important;
+  border-radius: 25px !important;
+  background: linear-gradient(135deg, #FFC107, #FF9800) !important;
+  color: #BF360C !important;
+  font-family: "Arial Black", sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease-in-out !important;
+  user-select: none !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  box-shadow: 0 4px 12px rgba(255, 87, 34, 0.3) !important;
+}
+
+.chip:hover {
+  background: linear-gradient(135deg, #FF5722, #E64A19) !important;
+  border-color: #BF360C !important;
+  color: #FFFFFF !important;
+  transform: translateY(-3px) scale(1.05) !important;
+  box-shadow: 0 6px 20px rgba(255, 87, 34, 0.5) !important;
+}
+
+.chip:active {
+  transform: translateY(0px) scale(0.95) !important;
+  box-shadow: 0 2px 8px rgba(255, 87, 34, 0.3) !important;
+}
+
+/* Botón "Todos" SUPER especial */
+.chip.all {
+  background: linear-gradient(135deg, #4CAF50, #8BC34A) !important;
+  border-color: #2E7D32 !important;
+  color: #1B5E20 !important;
+  font-weight: 900 !important;
+  animation: glow 2s ease-in-out infinite alternate !important;
+}
+
+@keyframes glow {
+  from { box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3); }
+  to { box-shadow: 0 4px 25px rgba(76, 175, 80, 0.8); }
+}
+
+.chip.all:hover {
+  background: linear-gradient(135deg, #2E7D32, #1B5E20) !important;
+  border-color: #0D5016 !important;
+  color: #FFFFFF !important;
+  transform: translateY(-5px) scale(1.1) !important;
+  box-shadow: 0 8px 30px rgba(76, 175, 80, 0.7) !important;
+}
+
+/* =================================================================== */
+/* DIVIDER                                                             */
+/* =================================================================== */
+
+.pbi-datepicker .divider {
+  border-top: 5px solid #E91E63 !important;
+  margin: 25px 0 !important;
+  opacity: 1 !important;
+  background: linear-gradient(90deg, #E91E63, #9C27B0, #673AB7, #3F51B5) !important;
+  height: 5px !important;
+  border: none !important;
+  border-radius: 3px !important;
+}
+
+/* =================================================================== */
+/* LOG SECTION - IMPOSIBLE DE NO VER                                  */
+/* =================================================================== */
+
+.pbi-datepicker .log {
+  background: linear-gradient(135deg, #FFEB3B, #FFC107, #FF9800) !important;
+  border: 6px solid #FF5722 !important;
+  border-radius: 20px !important;
+  padding: 25px !important;
+  box-shadow: inset 0 4px 8px rgba(255, 87, 34, 0.2), 0 8px 25px rgba(255, 87, 34, 0.4) !important;
+  animation: borderPulse 3s ease-in-out infinite !important;
+}
+
+@keyframes borderPulse {
+  0%, 100% { border-color: #FF5722; }
+  50% { border-color: #E91E63; }
+}
+
+.pbi-datepicker .log .title {
+  font-size: 18px !important;
+  font-weight: 900 !important;
+  color: #BF360C !important;
+  margin-bottom: 15px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  text-align: center !important;
+  border-bottom: 3px solid #E91E63 !important;
+  padding-bottom: 10px !important;
+  text-shadow: 2px 2px 4px rgba(191, 54, 12, 0.3) !important;
+}
+
+/* LOG BODY - SCROLL SUPER VISIBLE */
+.pbi-datepicker .log .log-body {
+  max-height: 150px !important;
+  min-height: 80px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  font-family: "Courier New", monospace !important;
+  font-size: 14px !important;
+  line-height: 1.8 !important;
+  border: 5px solid #E91E63 !important;
+  border-radius: 15px !important;
+  padding: 20px !important;
+  background: linear-gradient(45deg, #FFF9C4, #FFF59D) !important;
+  box-shadow: inset 0 3px 8px rgba(233, 30, 99, 0.2) !important;
+  resize: vertical !important;
+}
+
+/* SCROLL PERSONALIZADO MEGA VISIBLE */
+.pbi-datepicker .log .log-body::-webkit-scrollbar {
+  width: 20px !important;
+}
+
+.pbi-datepicker .log .log-body::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, #FFCDD2, #F8BBD9) !important;
+  border-radius: 10px !important;
+  border: 3px solid #E91E63 !important;
+  box-shadow: inset 0 2px 5px rgba(233, 30, 99, 0.3) !important;
+}
+
+.pbi-datepicker .log .log-body::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #E91E63, #AD1457, #880E4F) !important;
+  border-radius: 10px !important;
+  border: 3px solid #4A148C !important;
+  transition: all 0.3s ease-in-out !important;
+  box-shadow: 0 3px 8px rgba(233, 30, 99, 0.4) !important;
+}
+
+.pbi-datepicker .log .log-body::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #AD1457, #880E4F, #4A148C) !important;
+  border-color: #1A237E !important;
+  box-shadow: 0 5px 15px rgba(233, 30, 99, 0.6) !important;
+  transform: scaleX(1.2) !important;
+}
+
+/* Firefox scroll styling */
+.pbi-datepicker .log .log-body {
+  scrollbar-width: auto !important;
+  scrollbar-color: #E91E63 #FFCDD2 !important;
+}
+
+.pbi-datepicker .log .line {
+  color: #BF360C !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  padding: 4px 0 !important;
+  font-weight: 700 !important;
+  border-left: 4px solid transparent !important;
+  padding-left: 12px !important;
+  margin: 2px 0 !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-radius: 8px !important;
+}
+
+.pbi-datepicker .log .line:first-child {
+  color: #4A148C !important;
+  font-style: italic !important;
+  border-left-color: #E91E63 !important;
+  background: rgba(233, 30, 99, 0.1) !important;
+  border-radius: 8px !important;
+  font-weight: 900 !important;
+}
+
+/* =================================================================== */
+/* RESPONSIVE                                                          */
+/* =================================================================== */
+
+@media (max-width: 480px) {
+  .row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 15px !important;
+  }
+  
+  .field {
+    width: 100% !important;
+  }
+  
+  .chips {
+    justify-content: center !important;
+  }
+}
+.datex .icon { width:28px; height:28px; padding:0; display:grid; place-items:center; }
+
