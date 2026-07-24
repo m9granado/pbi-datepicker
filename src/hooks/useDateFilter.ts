@@ -40,6 +40,7 @@ export interface UseDateFilterReturn {
   setGranularityMode: (mode: GranularityMode) => void;
   applyMonthsFromDialog: (months: string[]) => void;
   applyDialogResult: (result: DatePickerDialogResult) => void;
+  toggleVsPrevious: (enabled: boolean) => void;
   disableComparisonMode: () => void;
 
   // Helpers
@@ -186,7 +187,18 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
 
   const setGranularityMode = React.useCallback((mode: GranularityMode) => {
     setState(prev => {
-      const refDate = prev.from || prev.navMonth || new Date();
+      const refDate = prev.navMonth || prev.from || new Date();
+
+      // If the "vs previous period" toggle is active, changing granularity
+      // just recomputes that comparison for the new Y/M/D scope instead of
+      // switching back to a plain single-range filter.
+      if (prev.mode === "comparison" && prev.comparisonId === "vsPrevious" && target) {
+        const ranges = getComparisonRanges("vsPrevious", refDate, mode);
+        applyMultipleDateRanges({ host, target }, ranges);
+        addLog(`🔢 Comparación vs. período anterior (${mode})`);
+        return { ...prev, granularity: mode, navMonth: refDate };
+      }
+
       let from: Date;
       let to: Date;
 
@@ -226,10 +238,27 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
 
   const navigatePeriod = React.useCallback((direction: 1 | -1) => {
     setState(prev => {
-      // 1. Comparison Mode Navigation (YoY, MTD vs PMTD, YTD)
+      // 1. Comparison Mode Navigation (YoY, MTD vs PMTD, YTD, vs. Previous Period)
       if (prev.mode === "comparison" && prev.comparisonId && target) {
         const refDate = prev.navMonth || prev.from || new Date();
         let newRefDate: Date;
+
+        if (prev.comparisonId === "vsPrevious") {
+          const granularity = prev.granularity || "M";
+          if (granularity === "Y") {
+            newRefDate = new Date(refDate.getFullYear() + direction, refDate.getMonth(), refDate.getDate());
+          } else if (granularity === "D") {
+            newRefDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate() + direction);
+          } else {
+            newRefDate = new Date(refDate.getFullYear(), refDate.getMonth() + direction, 1);
+          }
+
+          const ranges = getComparisonRanges("vsPrevious", newRefDate, granularity);
+          applyMultipleDateRanges({ host, target }, ranges);
+          addLog(`🔄 Comparación (${granularity}) navegada vs. período anterior: ${ranges.map(r => `${formatDateDMY(r.from)} - ${formatDateDMY(r.to)}`).join(" | ")}`);
+
+          return { ...prev, navMonth: newRefDate };
+        }
 
         if (prev.comparisonId === "yoy" || prev.comparisonId === "ytdVsYtd") {
           newRefDate = new Date(refDate.getFullYear() + direction, refDate.getMonth(), refDate.getDate());
@@ -341,6 +370,37 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
     }
   }, [setDateRange, applyPreset, applyComparison, applyMonthsFromDialog, clearFilter]);
 
+  // Quick switch next to the Y/M/D selector: on = compare the current
+  // Year/Month/Day (whichever granularity is active) against the previous
+  // equivalent period; off = drop back to plain navigation at the same spot.
+  const toggleVsPrevious = React.useCallback((enabled: boolean) => {
+    if (!target) return;
+
+    if (!enabled) {
+      clearDateFilter({ host, target });
+      addLog("Comparación vs. período anterior desactivada");
+      setState(prev => ({ ...prev, mode: "range", comparisonId: undefined, from: undefined, to: undefined }));
+      return;
+    }
+
+    setState(prev => {
+      const granularity = prev.granularity || "M";
+      const refDate = prev.navMonth || prev.from || new Date();
+      const ranges = getComparisonRanges("vsPrevious", refDate, granularity);
+      applyMultipleDateRanges({ host, target }, ranges);
+      addLog(`🔄 Comparación activada (${granularity}) vs. período anterior`);
+
+      return {
+        ...prev,
+        mode: "comparison",
+        comparisonId: "vsPrevious",
+        from: undefined,
+        to: undefined,
+        navMonth: refDate
+      };
+    });
+  }, [host, target, addLog]);
+
   const disableComparisonMode = React.useCallback(() => {
     if (target) {
       clearDateFilter({ host, target });
@@ -368,6 +428,7 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
     setGranularityMode,
     applyMonthsFromDialog,
     applyDialogResult,
+    toggleVsPrevious,
     disableComparisonMode,
     addLog
   };

@@ -1,140 +1,140 @@
 import * as React from "react";
+import powerbi from "powerbi-visuals-api";
 import { ComparisonId } from "../core/presets";
+import { ComparisonInfoDialog } from "../dialogs/ComparisonInfoDialog";
 
 export interface ComparisonBannerProps {
+  host: powerbi.extensibility.visual.IVisualHost;
   comparisonId: ComparisonId;
+  granularityLabel?: string;
   onDisable: () => void;
 }
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '0.5em',
-    padding: '0.75em',
+    alignItems: 'center',
+    gap: '0.4em',
+    padding: '0.35em 0.6em',
     backgroundColor: '#FFFBEA',
     border: '1px solid #E0C550',
-    borderRadius: '8px',
-    marginBottom: '0.75em'
+    borderRadius: '14px',
+    marginBottom: '0.5em',
+    fontSize: '0.8em'
   },
-  header: {
+  label: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.5em'
-  },
-  warningIcon: {
-    fontSize: '1.2em',
-    color: '#E0C550'
-  },
-  title: {
-    fontWeight: 600,
-    fontSize: '0.9em',
-    color: '#8B7355'
-  },
-  description: {
-    fontSize: '0.8em',
-    color: '#666666',
-    lineHeight: 1.4,
-    marginLeft: '1.7em'
-  },
-  actions: {
-    display: 'flex',
-    gap: '0.5em',
-    marginLeft: '1.7em',
-    marginTop: '0.25em'
-  },
-  disableButton: {
-    padding: '0.35em 0.75em',
-    border: '1px solid #E0C550',
-    borderRadius: '4px',
-    background: '#F9E692',
+    gap: '0.35em',
     color: '#8B7355',
-    fontSize: '0.8em',
-    fontWeight: 500,
-    cursor: 'pointer',
-    transition: 'all 0.15s ease'
+    fontWeight: 600,
+    whiteSpace: 'nowrap' as const,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    flex: 1
   },
-  helpLink: {
-    padding: '0.35em 0.75em',
+  iconButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '18px',
+    height: '18px',
     border: 'none',
     background: 'transparent',
-    color: '#007AFF',
-    fontSize: '0.8em',
+    color: '#8B7355',
     cursor: 'pointer',
-    textDecoration: 'underline'
+    borderRadius: '50%',
+    fontSize: '12px',
+    fontWeight: 700,
+    flexShrink: 0
+  },
+  closeButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '18px',
+    height: '18px',
+    border: 'none',
+    background: 'transparent',
+    color: '#8B7355',
+    cursor: 'pointer',
+    borderRadius: '50%',
+    fontSize: '14px',
+    lineHeight: 1,
+    flexShrink: 0
   }
 };
 
-const WarningIcon: React.FC = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E0C550" strokeWidth="2">
-    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-    <line x1="12" y1="9" x2="12" y2="13"/>
-    <line x1="12" y1="17" x2="12.01" y2="17"/>
-  </svg>
-);
-
-const comparisonDescriptions: Record<ComparisonId, { title: string; description: string }> = {
+const comparisonInfo: Record<ComparisonId, { title: string; description: string }> = {
   mtdVsPmtd: {
-    title: "MTD vs PMTD (Mes Actual vs Mes Anterior)",
-    description: "Compara el mes actual (hasta hoy) con el mismo período del mes anterior. Para usar este modo, necesitas crear medidas DAX que separen los períodos en tu visual."
+    title: "MTD vs PMTD",
+    description: "Compara el mes actual (hasta hoy) con el mismo período del mes anterior."
   },
   yoy: {
-    title: "YoY (Año vs Año)",
-    description: "Compara el mes completo actual con el mismo mes del año pasado. Requiere medidas DAX específicas para separar los datos de cada año."
+    title: "YoY",
+    description: "Compara el mes completo actual con el mismo mes del año pasado."
   },
   ytdVsYtd: {
-    title: "YTD vs YTD (Año a la Fecha)",
-    description: "Compara el período desde enero hasta hoy con el mismo período del año anterior. Necesitarás implementar lógica DAX para filtrar correctamente cada período."
+    title: "YTD vs YTD",
+    description: "Compara el período desde enero hasta hoy con el mismo período del año anterior."
+  },
+  vsPrevious: {
+    title: "vs. Período Anterior",
+    description: "Compara el período actual (según la granularidad Y/M/D activa) con el equivalente inmediatamente anterior."
   }
 };
 
+// Compact single-line chip - replaces the old always-expanded warning box
+// that ate most of the visual's limited canvas space. Full explanation now
+// lives in a host dialog (see ComparisonInfoDialog), opened on demand via
+// the "ⓘ" button, so it doesn't cost any canvas space until asked for.
 export const ComparisonBanner: React.FC<ComparisonBannerProps> = React.memo(({
+  host,
   comparisonId,
+  granularityLabel,
   onDisable
 }) => {
-  const info = comparisonDescriptions[comparisonId];
+  const info = comparisonInfo[comparisonId];
+  const title = comparisonId === "vsPrevious" && granularityLabel ? granularityLabel : info.title;
 
-  const handleHelpClick = () => {
-    // Open documentation in new tab
-    window.open('https://github.com/your-repo/datex/docs/comparisons.md', '_blank');
+  const handleInfoClick = () => {
+    host.openModalDialog(
+      ComparisonInfoDialog.id,
+      {
+        title: "Modo Comparación",
+        size: { width: 320, height: 260 },
+        position: { type: powerbi.VisualDialogPositionType.Center },
+        actionButtons: [powerbi.DialogAction.OK]
+      },
+      { title, description: info.description }
+    ).catch(() => {
+      // Dialog unavailable in this host environment (e.g. Embed/Dashboards) - no-op.
+    });
   };
 
   return (
-    <div 
-      style={styles.container} 
-      role="alert"
-      aria-live="polite"
-    >
-      <div style={styles.header}>
-        <span style={styles.warningIcon}>
-          <WarningIcon />
-        </span>
-        <span style={styles.title}>{info.title}</span>
-      </div>
-      
-      <div style={styles.description}>
-        {info.description}
-      </div>
-
-      <div style={styles.actions}>
-        <button
-          type="button"
-          onClick={onDisable}
-          style={styles.disableButton}
-          title="Desactivar modo comparación y volver a filtros normales"
-          aria-label="Desactivar modo comparación"
-        >
-          Desactivar modo comparación
-        </button>
-        <button
-          type="button"
-          onClick={handleHelpClick}
-          style={styles.helpLink}
-          title="Abrir documentación de implementación"
-        >
-          Ver guía de implementación →
-        </button>
-      </div>
+    <div style={styles.container} role="status" aria-live="polite">
+      <span style={styles.label} title={info.description}>
+        🔄 {title} activo
+      </span>
+      <button
+        type="button"
+        onClick={handleInfoClick}
+        style={styles.iconButton}
+        title="Qué significa este modo"
+        aria-label="Ver información del modo comparación"
+      >
+        ⓘ
+      </button>
+      <button
+        type="button"
+        onClick={onDisable}
+        style={styles.closeButton}
+        title="Desactivar modo comparación"
+        aria-label="Desactivar modo comparación"
+      >
+        ×
+      </button>
     </div>
   );
 });

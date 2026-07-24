@@ -89,7 +89,16 @@ const presetLabels: Record<PresetId, string> = {
 const comparisonLabels: Record<ComparisonId, string> = {
   mtdVsPmtd: "MTD vs PMTD",
   yoy: "YoY",
-  ytdVsYtd: "YTD vs YTD"
+  ytdVsYtd: "YTD vs YTD",
+  vsPrevious: "vs. Período Anterior"
+};
+
+// Compact label for the quick "vs previous period" toggle, matching the
+// currently active Y/M/D granularity.
+const vsPreviousLabelFor = (granularity: GranularityMode): string => {
+  if (granularity === "Y") return "YoY";
+  if (granularity === "D") return "DoD";
+  return "MoM";
 };
 
 export const App: React.FC<AppProps> = (props) => {
@@ -139,6 +148,7 @@ export const App: React.FC<AppProps> = (props) => {
     setGranularityMode,
     applyMonthsFromDialog,
     applyDialogResult,
+    toggleVsPrevious,
     disableComparisonMode
   } = useDateFilter({
     host: props.host,
@@ -165,6 +175,8 @@ export const App: React.FC<AppProps> = (props) => {
   const activeComparisonLabel = state.comparisonId ? comparisonLabels[state.comparisonId] : undefined;
 
   const dialogSupported = props.host.hostCapabilities?.allowModalDialog !== false;
+
+  const effectiveGranularity = resolveGranularity(state.granularity, showGranularityYear, showGranularityMonth, showGranularityDay);
 
   // Popup mode: instead of rendering the full picker inline (clipped by the
   // visual's own sandboxed bounding box), open the entire UI as a native
@@ -268,7 +280,7 @@ export const App: React.FC<AppProps> = (props) => {
           />
         )}
         {state.comparisonId && (
-          <ComparisonBanner comparisonId={state.comparisonId} onDisable={disableComparisonMode} />
+          <ComparisonBanner host={props.host} comparisonId={state.comparisonId} granularityLabel={vsPreviousLabelFor(effectiveGranularity)} onDisable={disableComparisonMode} />
         )}
       </div>
     );
@@ -280,7 +292,9 @@ export const App: React.FC<AppProps> = (props) => {
       {/* Comparison Mode Banner - Shows when in comparison mode */}
       {state.comparisonId && (
         <ComparisonBanner
+          host={props.host}
           comparisonId={state.comparisonId}
+          granularityLabel={vsPreviousLabelFor(effectiveGranularity)}
           onDisable={disableComparisonMode}
         />
       )}
@@ -317,7 +331,7 @@ export const App: React.FC<AppProps> = (props) => {
         <MonthSelector
           host={props.host}
           navMonth={state.navMonth}
-          granularity={resolveGranularity(state.granularity, showGranularityYear, showGranularityMonth, showGranularityDay)}
+          granularity={effectiveGranularity}
           showGranularityYear={showGranularityYear}
           showGranularityMonth={showGranularityMonth}
           showGranularityDay={showGranularityDay}
@@ -329,6 +343,9 @@ export const App: React.FC<AppProps> = (props) => {
           onPrevMonth={() => navigateMonth(-1)}
           onNextMonth={() => navigateMonth(1)}
           onMonthsSelected={applyMonthsFromDialog}
+          showComparisonToggle={enableVersus}
+          comparePrevious={state.comparisonId === "vsPrevious"}
+          onToggleComparePrevious={toggleVsPrevious}
           monthsBack={36}
           monthsForward={6}
         />

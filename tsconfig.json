@@ -34,8 +34,10 @@
     "src/components/ActivityLog.tsx",
     "src/components/FilterBadge.tsx",
     "src/components/ComparisonBanner.tsx",
+    "src/components/ComparisonToggle.tsx",
     "src/components/MonthGrid.tsx",
     "src/dialogs/MonthPickerDialog.tsx",
+    "src/dialogs/ComparisonInfoDialog.tsx",
     "src/dialogs/DatePickerDialog.tsx",
     "src/types/images.d.ts"
   ]

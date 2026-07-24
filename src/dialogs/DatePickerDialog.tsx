@@ -83,7 +83,8 @@ const presetLabels: Record<PresetId, string> = {
 const comparisonLabels: Record<ComparisonId, string> = {
   mtdVsPmtd: "MTD vs PMTD",
   yoy: "YoY",
-  ytdVsYtd: "YTD vs YTD"
+  ytdVsYtd: "YTD vs YTD",
+  vsPrevious: "vs. Período Anterior"
 };
 
 const DatePickerDialogContent: React.FC<{

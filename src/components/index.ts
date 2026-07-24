@@ -7,4 +7,5 @@ export { GranularitySelector, GranularityMode } from './GranularitySelector';
 export { ActivityLog } from './ActivityLog';
 export { FilterBadge } from './FilterBadge';
 export { ComparisonBanner } from './ComparisonBanner';
+export { ComparisonToggle } from './ComparisonToggle';
 export { MonthGrid, buildMonthItems, getTodayMonthValue } from './MonthGrid';

@@ -1,6 +1,6 @@
 export type PresetId = "today" | "yesterday" | "last7" | "last30" | "last90" | "thisWeek" | "lastWeek" | "thisMonth" | "prevMonth" | "thisYear";
 
-export type ComparisonId = "mtdVsPmtd" | "yoy" | "ytdVsYtd";
+export type ComparisonId = "mtdVsPmtd" | "yoy" | "ytdVsYtd" | "vsPrevious";
 
 export const toStartOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
 export const toEndOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
@@ -70,10 +70,43 @@ export interface DateRange {
   to: Date;
 }
 
-export function getComparisonRanges(comparisonId: ComparisonId, refDate?: Date): DateRange[] {
+export function getComparisonRanges(
+  comparisonId: ComparisonId,
+  refDate?: Date,
+  granularity: "Y" | "M" | "D" = "M"
+): DateRange[] {
   const now = refDate || new Date();
 
   switch (comparisonId) {
+    // Quick "vs previous period" toggle next to the Y/M/D selector - compares
+    // the whole current Year/Month/Day (per the active granularity) against
+    // the equivalent previous one, anchored to whatever period is navigated to.
+    case "vsPrevious": {
+      if (granularity === "Y") {
+        const year = now.getFullYear();
+        const current: DateRange = { from: new Date(year, 0, 1), to: new Date(year, 11, 31, 23, 59, 59, 999) };
+        const previous: DateRange = { from: new Date(year - 1, 0, 1), to: new Date(year - 1, 11, 31, 23, 59, 59, 999) };
+        return [current, previous];
+      }
+      if (granularity === "D") {
+        const current: DateRange = { from: toStartOfDay(now), to: toEndOfDay(now) };
+        const prevDay = addDays(now, -1);
+        const previous: DateRange = { from: toStartOfDay(prevDay), to: toEndOfDay(prevDay) };
+        return [current, previous];
+      }
+      // Month (default)
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      const current: DateRange = { from: new Date(year, month, 1), to: new Date(year, month, lastDay, 23, 59, 59, 999) };
+      const prevMonthDate = new Date(year, month - 1, 1);
+      const prevLastDay = new Date(prevMonthDate.getFullYear(), prevMonthDate.getMonth() + 1, 0).getDate();
+      const previous: DateRange = {
+        from: new Date(prevMonthDate.getFullYear(), prevMonthDate.getMonth(), 1),
+        to: new Date(prevMonthDate.getFullYear(), prevMonthDate.getMonth(), prevLastDay, 23, 59, 59, 999)
+      };
+      return [current, previous];
+    }
     case "mtdVsPmtd": {
       const dayOfMonth = now.getDate();
 
@@ -163,6 +196,8 @@ export function formatComparisonBadge(comparisonId: ComparisonId, locale: string
       return `YoY: ${rangeTexts.join(" | ")}`;
     case "ytdVsYtd":
       return `YTD vs YTD: ${rangeTexts.join(" | ")}`;
+    case "vsPrevious":
+      return `vs. Período Anterior: ${rangeTexts.join(" | ")}`;
     default:
       return rangeTexts.join(" | ");
   }

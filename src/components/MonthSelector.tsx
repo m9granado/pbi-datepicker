@@ -2,7 +2,14 @@ import * as React from "react";
 import powerbi from "powerbi-visuals-api";
 import { formatMonthYear } from "../utils/dateHelpers";
 import { GranularitySelector, GranularityMode } from "./GranularitySelector";
+import { ComparisonToggle } from "./ComparisonToggle";
 import { MonthPickerDialog } from "../dialogs/MonthPickerDialog";
+
+const vsPreviousLabel = (granularity: GranularityMode): string => {
+  if (granularity === "Y") return "YoY";
+  if (granularity === "D") return "DoD";
+  return "MoM";
+};
 
 export interface MonthSelectorProps {
   host: powerbi.extensibility.visual.IVisualHost;
@@ -19,6 +26,9 @@ export interface MonthSelectorProps {
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onMonthsSelected: (months: string[]) => void;
+  showComparisonToggle?: boolean;
+  comparePrevious?: boolean;
+  onToggleComparePrevious?: (enabled: boolean) => void;
   // New year navigation props
   monthsBack?: number;
   monthsForward?: number;
@@ -146,6 +156,9 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
   onPrevMonth,
   onNextMonth,
   onMonthsSelected,
+  showComparisonToggle = false,
+  comparePrevious = false,
+  onToggleComparePrevious,
   monthsBack = 36,
   monthsForward = 6
 }) => {
@@ -214,17 +227,27 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-      {/* Row 1: Granularity mode selector (Y / M / D) */}
-      {onGranularityChange && (
+      {/* Row 1: Granularity mode selector (Y / M / D) + quick "vs previous period" switch */}
+      {(onGranularityChange || (showComparisonToggle && onToggleComparePrevious)) && (
         <div style={styles.granularityRow}>
-          <GranularitySelector
-            activeMode={granularity}
-            onModeChange={onGranularityChange}
-            disabled={disabled}
-            showYear={showGranularityYear}
-            showMonth={showGranularityMonth}
-            showDay={showGranularityDay}
-          />
+          {onGranularityChange && (
+            <GranularitySelector
+              activeMode={granularity}
+              onModeChange={onGranularityChange}
+              disabled={disabled}
+              showYear={showGranularityYear}
+              showMonth={showGranularityMonth}
+              showDay={showGranularityDay}
+            />
+          )}
+          {showComparisonToggle && onToggleComparePrevious && (
+            <ComparisonToggle
+              checked={comparePrevious}
+              label={vsPreviousLabel(granularity)}
+              onChange={onToggleComparePrevious}
+              disabled={disabled}
+            />
+          )}
         </div>
       )}
 

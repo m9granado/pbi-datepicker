@@ -91,7 +91,10 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = React.memo(({
   const visibleMap: Record<ComparisonId, boolean | undefined> = {
     mtdVsPmtd: showMTDvsPMTD,
     yoy: showYoY,
-    ytdVsYtd: showYTDvsYTD
+    ytdVsYtd: showYTDvsYTD,
+    // "vsPrevious" is driven by the ComparisonToggle switch next to Y/M/D,
+    // not a manual preset button here.
+    vsPrevious: false
   };
 
   const visibleButtons = comparisonConfig.filter(
