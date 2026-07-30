@@ -189,6 +189,8 @@ const MonthPickerContent: React.FC<{
             selected={selectedMonths}
             onToggle={toggleMonth}
             onToggleYear={toggleYearInMonthView}
+            minDate={minDateObj}
+            maxDate={maxDateObj}
           />
         )}
 

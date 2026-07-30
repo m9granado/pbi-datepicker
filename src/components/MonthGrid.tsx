@@ -40,12 +40,20 @@ export interface MonthGridProps {
   onToggle: (value: string) => void;
   onToggleYear?: (yearValues: string[]) => void;
   columns?: number;
+  minDate?: Date;
+  maxDate?: Date;
 }
+
+const isMonthDisabled = (m: MonthGridItem, minDate?: Date, maxDate?: Date): boolean => {
+  const lastDay = new Date(m.year, m.month + 1, 0, 23, 59, 59, 999);
+  const firstDay = new Date(m.year, m.month, 1, 0, 0, 0, 0);
+  return (!!minDate && lastDay < minDate) || (!!maxDate && firstDay > maxDate);
+};
 
 // Reusable "checkbox grid of months grouped by year" - shared by the
 // per-month Power BI host dialog and the full popup-mode host dialog, so
 // both stay visually/behaviorally consistent without duplicating the markup.
-export const MonthGrid: React.FC<MonthGridProps> = ({ months, selected, onToggle, onToggleYear, columns = 4 }) => {
+export const MonthGrid: React.FC<MonthGridProps> = ({ months, selected, onToggle, onToggleYear, columns = 4, minDate, maxDate }) => {
   const todayValue = getTodayMonthValue();
 
   const grouped = React.useMemo(() => {
@@ -60,15 +68,17 @@ export const MonthGrid: React.FC<MonthGridProps> = ({ months, selected, onToggle
   return (
     <div>
       {Object.entries(grouped).map(([year, ms]) => {
-        const yearValues = ms.map(m => m.value);
-        const allSelected = yearValues.every(v => selected.includes(v));
+        const selectableValues = ms.filter(m => !isMonthDisabled(m, minDate, maxDate)).map(m => m.value);
+        const allSelected = selectableValues.length > 0 && selectableValues.every(v => selected.includes(v));
+        const yearToggleDisabled = selectableValues.length === 0;
         return (
         <div key={year} style={{ marginBottom: 12 }}>
           <div
-            onClick={onToggleYear ? () => onToggleYear(yearValues) : undefined}
+            onClick={onToggleYear && !yearToggleDisabled ? () => onToggleYear(selectableValues) : undefined}
             role={onToggleYear ? "checkbox" : undefined}
             aria-checked={onToggleYear ? allSelected : undefined}
-            title={onToggleYear ? `Click para seleccionar/deseleccionar todo ${year}` : undefined}
+            aria-disabled={yearToggleDisabled}
+            title={onToggleYear ? (yearToggleDisabled ? `${year} fuera de rango` : `Click para seleccionar/deseleccionar todo ${year}`) : undefined}
             style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -80,7 +90,8 @@ export const MonthGrid: React.FC<MonthGridProps> = ({ months, selected, onToggle
               padding: '4px 8px',
               borderRadius: 4,
               marginBottom: 6,
-              cursor: onToggleYear ? 'pointer' : 'default',
+              cursor: onToggleYear && !yearToggleDisabled ? 'pointer' : 'default',
+              opacity: yearToggleDisabled ? 0.4 : 1,
               userSelect: 'none'
             }}
           >
@@ -91,25 +102,28 @@ export const MonthGrid: React.FC<MonthGridProps> = ({ months, selected, onToggle
             {ms.map(m => {
               const isSelected = selected.includes(m.value);
               const isCurrent = m.value === todayValue;
+              const isDisabled = isMonthDisabled(m, minDate, maxDate);
               return (
                 <div
                   key={m.value}
-                  onClick={() => onToggle(m.value)}
+                  onClick={() => !isDisabled && onToggle(m.value)}
                   role="checkbox"
                   aria-checked={isSelected}
-                  title={`${m.label} ${year}${isCurrent ? ' (actual)' : ''}`}
+                  aria-disabled={isDisabled}
+                  title={`${m.label} ${year}${isCurrent ? ' (actual)' : ''}${isDisabled ? ' (sin datos)' : ''}`}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     padding: '8px 4px',
                     borderRadius: 4,
-                    cursor: 'pointer',
+                    cursor: isDisabled ? 'not-allowed' : 'pointer',
                     fontSize: 13,
                     border: isCurrent && !isSelected ? '1px solid #007AFF' : '1px solid transparent',
                     fontWeight: isCurrent && !isSelected ? 700 : 400,
                     backgroundColor: isSelected ? '#007AFF' : '#F7F7F7',
                     color: isSelected ? '#FFFFFF' : '#333333',
+                    opacity: isDisabled ? 0.35 : 1,
                     transition: 'all 0.1s ease'
                   }}
                 >

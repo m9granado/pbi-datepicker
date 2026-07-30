@@ -86,6 +86,8 @@ export const App: React.FC<AppProps> = (props) => {
   } = useDateFilter({
     host: props.host,
     target,
+    minDate,
+    maxDate,
     showLog
   });
 

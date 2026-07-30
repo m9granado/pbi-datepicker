@@ -1,7 +1,7 @@
 import * as React from "react";
 import powerbi from "powerbi-visuals-api";
 import { applyDateBetween, clearDateFilter, applyMultipleDateRanges, ColumnTarget } from "../core/filters";
-import { getRange, PresetId, DateRange } from "../core/presets";
+import { getRange, PresetId, DateRange, getAdjacentRange, isRangeOutOfBounds, clampRangeToLimits } from "../core/presets";
 import { formatDateDMY, ensureValidDateRange } from "../utils/dateHelpers";
 
 import { GranularityMode } from "../components/GranularitySelector";
@@ -71,31 +71,28 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
       addLog(`🔄 Fechas auto-ajustadas: from > to`);
     }
 
+    const clamped = validRange.from && validRange.to
+      ? clampRangeToLimits({ from: validRange.from, to: validRange.to }, minDate, maxDate)
+      : { from: validRange.from, to: validRange.to };
+
     setState(prev => ({
       ...prev,
       mode: 'range',
-      from: validRange.from,
-      to: validRange.to,
+      from: clamped.from,
+      to: clamped.to,
       presetId: undefined
     }));
 
-    if (validRange.from && validRange.to && target) {
-      applyDateBetween({ host, target }, validRange.from, validRange.to);
-      addLog(`Manual filter: ${formatDateDMY(validRange.from)} - ${formatDateDMY(validRange.to)}`);
+    if (clamped.from && clamped.to && target) {
+      applyDateBetween({ host, target }, clamped.from, clamped.to);
+      addLog(`Manual filter: ${formatDateDMY(clamped.from)} - ${formatDateDMY(clamped.to)}`);
     }
-  }, [host, target, addLog]);
+  }, [host, target, minDate, maxDate, addLog]);
 
   const applyPreset = React.useCallback((presetId: PresetId, overrideGranularity?: GranularityMode) => {
     setState(prev => {
       const currentGranularity = overrideGranularity || prev.granularity || "M";
-      const range = getRange(presetId, currentGranularity);
-
-      if (minDate && range.from < minDate) {
-        range.from = new Date(minDate.getTime());
-      }
-      if (maxDate && range.to > maxDate) {
-        range.to = new Date(maxDate.getTime());
-      }
+      const range = clampRangeToLimits(getRange(presetId, currentGranularity), minDate, maxDate);
 
       if (target) {
         applyDateBetween({ host, target }, range.from, range.to);
@@ -113,7 +110,7 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
         selectedMonths: []
       };
     });
-  }, [host, target, addLog]);
+  }, [host, target, minDate, maxDate, addLog]);
 
   const clearFilter = React.useCallback(() => {
     if (target) {
@@ -212,33 +209,16 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
     setState(prev => {
       const granularity = overrideGranularity || prev.granularity || "M";
       const refDate = prev.from || prev.navMonth || new Date();
-      let from: Date;
-      let to: Date;
+      const candidate = getAdjacentRange("period", direction, refDate, granularity);
 
-      if (granularity === "Y") {
-        const newYear = refDate.getFullYear() + direction;
-        from = new Date(newYear, 0, 1, 0, 0, 0, 0);
-        to = new Date(newYear, 11, 31, 23, 59, 59, 999);
-      } else if (granularity === "D") {
-        const newDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate() + direction);
-        from = new Date(newDate.getFullYear(), newDate.getMonth(), newDate.getDate(), 0, 0, 0, 0);
-        to = new Date(newDate.getFullYear(), newDate.getMonth(), newDate.getDate(), 23, 59, 59, 999);
-      } else {
-        // Month (M)
-        const newMonthDate = new Date(refDate.getFullYear(), refDate.getMonth() + direction, 1);
-        const lastDay = new Date(newMonthDate.getFullYear(), newMonthDate.getMonth() + 1, 0).getDate();
-        from = new Date(newMonthDate.getFullYear(), newMonthDate.getMonth(), 1, 0, 0, 0, 0);
-        to = new Date(newMonthDate.getFullYear(), newMonthDate.getMonth(), lastDay, 23, 59, 59, 999);
+      if (isRangeOutOfBounds(candidate, minDate, maxDate)) {
+        const boundary = direction === -1 ? minDate : maxDate;
+        if (boundary) {
+          addLog(`⛔ Límite alcanzado: sin datos ${direction === -1 ? 'antes de' : 'después de'} ${formatDateDMY(boundary)}`);
+        }
+        return prev;
       }
-
-      if (minDate && from < minDate) {
-        if (to < minDate) return prev;
-        from = new Date(minDate.getTime());
-      }
-      if (maxDate && to > maxDate) {
-        if (from > maxDate) return prev;
-        to = new Date(maxDate.getTime());
-      }
+      const { from, to } = clampRangeToLimits(candidate, minDate, maxDate);
 
       if (target) {
         applyDateBetween({ host, target }, from, to);
@@ -261,34 +241,16 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
     setState(prev => {
       const granularity = overrideGranularity || prev.granularity || "M";
       const refDate = prev.from || prev.navMonth || new Date();
-      let from: Date;
-      let to: Date;
+      const candidate = getAdjacentRange("year", direction, refDate, granularity);
 
-      if (granularity === "Y") {
-        const newYear = refDate.getFullYear() + (direction * 5);
-        from = new Date(newYear, 0, 1, 0, 0, 0, 0);
-        to = new Date(newYear, 11, 31, 23, 59, 59, 999);
-      } else if (granularity === "D") {
-        const newMonthDate = new Date(refDate.getFullYear(), refDate.getMonth() + direction, refDate.getDate());
-        from = new Date(newMonthDate.getFullYear(), newMonthDate.getMonth(), newMonthDate.getDate(), 0, 0, 0, 0);
-        to = new Date(newMonthDate.getFullYear(), newMonthDate.getMonth(), newMonthDate.getDate(), 23, 59, 59, 999);
-      } else {
-        // Month (M): Jump 1 year staying on same month index (e.g. July 2025 -> July 2026)
-        const newYear = refDate.getFullYear() + direction;
-        const month = refDate.getMonth();
-        const lastDay = new Date(newYear, month + 1, 0).getDate();
-        from = new Date(newYear, month, 1, 0, 0, 0, 0);
-        to = new Date(newYear, month, lastDay, 23, 59, 59, 999);
+      if (isRangeOutOfBounds(candidate, minDate, maxDate)) {
+        const boundary = direction === -1 ? minDate : maxDate;
+        if (boundary) {
+          addLog(`⛔ Límite alcanzado: sin datos ${direction === -1 ? 'antes de' : 'después de'} ${formatDateDMY(boundary)}`);
+        }
+        return prev;
       }
-
-      if (minDate && from < minDate) {
-        if (to < minDate) return prev;
-        from = new Date(minDate.getTime());
-      }
-      if (maxDate && to > maxDate) {
-        if (from > maxDate) return prev;
-        to = new Date(maxDate.getTime());
-      }
+      const { from, to } = clampRangeToLimits(candidate, minDate, maxDate);
 
       if (target) {
         applyDateBetween({ host, target }, from, to);
@@ -319,8 +281,8 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
 
     if (months.length === 1) {
       const [year, month] = months[0].split('-').map(Number);
-      const firstDay = new Date(year, month - 1, 1, 0, 0, 0, 0);
-      const lastDay = new Date(year, month, 0, 23, 59, 59, 999);
+      const rawRange = { from: new Date(year, month - 1, 1, 0, 0, 0, 0), to: new Date(year, month, 0, 23, 59, 59, 999) };
+      const { from: firstDay, to: lastDay } = clampRangeToLimits(rawRange, minDate, maxDate);
       if (target) {
         applyDateBetween({ host, target }, firstDay, lastDay);
         addLog(`🗓️ Mes seleccionado: ${months[0]}`);
@@ -338,26 +300,30 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
       return;
     }
 
-    const ranges: DateRange[] = months.map(monthStr => {
-      const [year, month] = monthStr.split('-').map(Number);
-      const firstDay = new Date(year, month - 1, 1);
-      const lastDay = new Date(year, month, 0, 23, 59, 59, 999);
-      return { from: firstDay, to: lastDay };
-    });
+    const ranges: DateRange[] = months
+      .map(monthStr => {
+        const [year, month] = monthStr.split('-').map(Number);
+        return { from: new Date(year, month - 1, 1), to: new Date(year, month, 0, 23, 59, 59, 999) };
+      })
+      .filter(range => !isRangeOutOfBounds(range, minDate, maxDate))
+      .map(range => clampRangeToLimits(range, minDate, maxDate));
 
     if (target) {
       applyMultipleDateRanges({ host, target }, ranges);
-      addLog(`🗓️ Meses seleccionados: ${months.length}`);
+      addLog(`🗓️ Meses seleccionados: ${ranges.length}`);
     }
 
     setState(prev => ({ ...prev, selectedMonths: months, mode: "multimonth" }));
-  }, [host, target, addLog]);
+  }, [host, target, minDate, maxDate, addLog]);
 
   const applyPeriodResultFromDialog = React.useCallback((result: PeriodPickerResult) => {
     if (result.granularity === "Y" && result.selectedYear !== undefined) {
       const year = result.selectedYear;
-      const from = new Date(year, 0, 1, 0, 0, 0, 0);
-      const to = new Date(year, 11, 31, 23, 59, 59, 999);
+      const { from, to } = clampRangeToLimits(
+        { from: new Date(year, 0, 1, 0, 0, 0, 0), to: new Date(year, 11, 31, 23, 59, 59, 999) },
+        minDate,
+        maxDate
+      );
       if (target) {
         applyDateBetween({ host, target }, from, to);
         addLog(`📅 Año seleccionado desde modal: ${year}`);
@@ -374,8 +340,11 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
       }));
     } else if (result.granularity === "D" && result.selectedDate !== undefined) {
       const d = new Date(result.selectedDate + "T00:00:00");
-      const from = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
-      const to = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+      const { from, to } = clampRangeToLimits(
+        { from: new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0), to: new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999) },
+        minDate,
+        maxDate
+      );
       if (target) {
         applyDateBetween({ host, target }, from, to);
         addLog(`📅 Día seleccionado desde modal: ${formatDateDMY(from)}`);
@@ -393,7 +362,7 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
     } else {
       applyMonthsFromDialog(result.selectedMonths || []);
     }
-  }, [host, target, addLog, applyMonthsFromDialog]);
+  }, [host, target, minDate, maxDate, addLog, applyMonthsFromDialog]);
 
   const applyDialogResult = React.useCallback((result: DatePickerDialogResult) => {
     switch (result.mode) {

@@ -2,11 +2,19 @@
 // Centralized date formatting and manipulation functions
 
 /**
- * Convert a Date to ISO string format suitable for date inputs (YYYY-MM-DD)
+ * Convert a Date to ISO string format suitable for date inputs (YYYY-MM-DD).
+ * Builds the string from local date parts rather than toISOString(), which
+ * converts to UTC and rolls over to the next/previous calendar day whenever
+ * the Date has a non-midnight-UTC local time (e.g. end-of-day 23:59:59.999
+ * values used throughout this codebase) — that mismatch corrupted the
+ * value/min/max shown in native <input type="date"> fields.
  */
 export const toISOInput = (d?: Date): string => {
   if (!d) return "";
-  return d.toISOString().split('T')[0];
+  const year = d.getFullYear();
+  const month = (d.getMonth() + 1).toString().padStart(2, '0');
+  const day = d.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 /**
