@@ -5,12 +5,16 @@ export interface DayPickerGridProps {
   selectedDate?: Date;
   onSelectDate: (date: Date) => void;
   initialDate?: Date;
+  minDate?: Date;
+  maxDate?: Date;
 }
 
 export const DayPickerGrid: React.FC<DayPickerGridProps> = ({
   selectedDate,
   onSelectDate,
-  initialDate
+  initialDate,
+  minDate,
+  maxDate
 }) => {
   const [viewDate, setViewDate] = React.useState<Date>(
     selectedDate || initialDate || new Date()
@@ -114,12 +118,14 @@ export const DayPickerGrid: React.FC<DayPickerGridProps> = ({
         {days.map(({ date, isCurrentMonth }, idx) => {
           const isSelected = selectedDate ? isSameDay(date, selectedDate) : false;
           const isToday = isSameDay(date, today);
+          const isDisabled = (minDate && date < minDate) || (maxDate && date > maxDate);
 
           return (
             <button
               key={idx}
               type="button"
-              onClick={() => onSelectDate(date)}
+              onClick={() => !isDisabled && onSelectDate(date)}
+              disabled={isDisabled}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -131,7 +137,8 @@ export const DayPickerGrid: React.FC<DayPickerGridProps> = ({
                 color: isSelected ? '#FFFFFF' : (isCurrentMonth ? '#333333' : '#AAAAAA'),
                 fontWeight: isToday || isSelected ? 700 : 400,
                 fontSize: 12,
-                cursor: 'pointer',
+                cursor: isDisabled ? 'not-allowed' : 'pointer',
+                opacity: isDisabled ? 0.3 : 1,
                 transition: 'all 0.1s ease',
                 outline: 'none'
               }}

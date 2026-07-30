@@ -18,6 +18,36 @@ function mapPreset(preset?: string): string | undefined {
   }
 }
 
+function extractDataMinMax(category?: powerbi.DataViewCategoryColumn): { minDate?: Date; maxDate?: Date } {
+  if (!category || !category.values || category.values.length === 0) {
+    return {};
+  }
+  let minTime = Infinity;
+  let maxTime = -Infinity;
+
+  for (const val of category.values) {
+    if (val === null || val === undefined) continue;
+    let d: Date;
+    if (val instanceof Date) {
+      d = val;
+    } else if (typeof val === 'string' || typeof val === 'number') {
+      d = new Date(val);
+    } else {
+      continue;
+    }
+    const time = d.getTime();
+    if (!isNaN(time)) {
+      if (time < minTime) minTime = time;
+      if (time > maxTime) maxTime = time;
+    }
+  }
+
+  const minDate = minTime !== Infinity ? new Date(minTime) : undefined;
+  const maxDate = maxTime !== -Infinity ? new Date(maxTime) : undefined;
+
+  return { minDate, maxDate };
+}
+
 export class Visual implements IVisual {
   private host: powerbi.extensibility.visual.IVisualHost;
   private container: HTMLElement;
@@ -59,12 +89,14 @@ export class Visual implements IVisual {
     );
 
     const dv = options.dataViews && options.dataViews[0];
+    const category = dv && dv.categorical && dv.categorical.categories && dv.categorical.categories[0];
+    const dataBounds = extractDataMinMax(category as any);
 
-    // Extract date restrictions
-    const minDate = this.formattingSettings.restrictionsCard.minDate.value;
-    const maxDate = this.formattingSettings.restrictionsCard.maxDate.value;
-    const min = minDate ? new Date(minDate + "T00:00:00") : undefined;
-    const max = maxDate ? new Date(maxDate + "T00:00:00") : undefined;
+    // Extract date restrictions (manual settings take precedence if specified, otherwise fall back to dataset bounds)
+    const manualMinDate = this.formattingSettings.restrictionsCard.minDate.value;
+    const manualMaxDate = this.formattingSettings.restrictionsCard.maxDate.value;
+    const min = manualMinDate ? new Date(manualMinDate + "T00:00:00") : dataBounds.minDate;
+    const max = manualMaxDate ? new Date(manualMaxDate + "T23:59:59.999") : dataBounds.maxDate;
 
     // Extract column target from dataView metadata
     let target: { table: string; column: string } | undefined;
@@ -83,8 +115,6 @@ export class Visual implements IVisual {
       }
     } catch {}
 
-    const category = dv && dv.categorical && dv.categorical.categories && dv.categorical.categories[0];
-    
     // Resolve font family
     const fontPresetValue = (this.formattingSettings.generalCard.fontPreset.value?.value as string) || "";
     const customFontFamily = this.formattingSettings.generalCard.fontFamily.value;

@@ -23,6 +23,8 @@ export interface FilterState {
 export interface UseDateFilterProps {
   host: powerbi.extensibility.visual.IVisualHost;
   target: ColumnTarget | undefined;
+  minDate?: Date;
+  maxDate?: Date;
   showLog?: boolean;
 }
 
@@ -47,7 +49,7 @@ export interface UseDateFilterReturn {
 }
 
 export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn => {
-  const { host, target, showLog } = props;
+  const { host, target, minDate, maxDate, showLog } = props;
 
   const [state, setState] = React.useState<FilterState>({ mode: "range" });
   const [logs, setLogs] = React.useState<string[]>([]);
@@ -87,6 +89,13 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
     setState(prev => {
       const currentGranularity = overrideGranularity || prev.granularity || "M";
       const range = getRange(presetId, currentGranularity);
+
+      if (minDate && range.from < minDate) {
+        range.from = new Date(minDate.getTime());
+      }
+      if (maxDate && range.to > maxDate) {
+        range.to = new Date(maxDate.getTime());
+      }
 
       if (target) {
         applyDateBetween({ host, target }, range.from, range.to);
@@ -222,6 +231,15 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
         to = new Date(newMonthDate.getFullYear(), newMonthDate.getMonth(), lastDay, 23, 59, 59, 999);
       }
 
+      if (minDate && from < minDate) {
+        if (to < minDate) return prev;
+        from = new Date(minDate.getTime());
+      }
+      if (maxDate && to > maxDate) {
+        if (from > maxDate) return prev;
+        to = new Date(maxDate.getTime());
+      }
+
       if (target) {
         applyDateBetween({ host, target }, from, to);
         addLog(`📅 Navegando período (${granularity}): ${formatDateDMY(from)} - ${formatDateDMY(to)}`);
@@ -237,7 +255,7 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
         navMonth: from
       };
     });
-  }, [host, target, addLog]);
+  }, [host, target, minDate, maxDate, addLog]);
 
   const navigateYear = React.useCallback((direction: 1 | -1, overrideGranularity?: GranularityMode) => {
     setState(prev => {
@@ -263,6 +281,15 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
         to = new Date(newYear, month, lastDay, 23, 59, 59, 999);
       }
 
+      if (minDate && from < minDate) {
+        if (to < minDate) return prev;
+        from = new Date(minDate.getTime());
+      }
+      if (maxDate && to > maxDate) {
+        if (from > maxDate) return prev;
+        to = new Date(maxDate.getTime());
+      }
+
       if (target) {
         applyDateBetween({ host, target }, from, to);
         addLog(`📅 Navegando año (${granularity}): ${formatDateDMY(from)} - ${formatDateDMY(to)}`);
@@ -278,7 +305,7 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
         navMonth: from
       };
     });
-  }, [host, target, addLog]);
+  }, [host, target, minDate, maxDate, addLog]);
 
   const applyMonthsFromDialog = React.useCallback((months: string[]) => {
     if (months.length === 0) {

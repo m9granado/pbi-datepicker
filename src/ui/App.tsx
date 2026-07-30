@@ -162,6 +162,8 @@ export const App: React.FC<AppProps> = (props) => {
           navMonth={state.navMonth}
           from={state.from}
           to={state.to}
+          minDate={minDate}
+          maxDate={maxDate}
           granularity={effectiveGranularity}
           showGranularityYear={showGranularityYear}
           showGranularityMonth={showGranularityMonth}

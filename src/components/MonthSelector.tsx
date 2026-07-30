@@ -1,6 +1,6 @@
 import * as React from "react";
 import powerbi from "powerbi-visuals-api";
-import { formatMonthYear, isRangeMatch } from "../utils/dateHelpers";
+import { formatMonthYear, isRangeMatch, toISOInput } from "../utils/dateHelpers";
 import { GranularitySelector, GranularityMode } from "./GranularitySelector";
 import { MonthPickerDialog, PeriodPickerResult } from "../dialogs/MonthPickerDialog";
 import { PresetId, getRange } from "../core/presets";
@@ -10,6 +10,8 @@ export interface MonthSelectorProps {
   navMonth?: Date;
   from?: Date;
   to?: Date;
+  minDate?: Date;
+  maxDate?: Date;
   selectedMonths?: string[];
   showSelectionBadge?: boolean;
   disabled?: boolean;
@@ -169,6 +171,8 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
   navMonth,
   from,
   to,
+  minDate,
+  maxDate,
   selectedMonths = [],
   showSelectionBadge = false,
   disabled = false,
@@ -223,7 +227,10 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
     return formatMonthYear(targetDate, 'es-CL');
   };
 
-  const prevButtonStyle = disabled
+  const isPrevDisabled = disabled || (minDate && activeFrom && activeFrom <= minDate);
+  const isNextDisabled = disabled || (maxDate && activeTo && activeTo >= maxDate);
+
+  const prevButtonStyle = isPrevDisabled
     ? { ...styles.navButton, ...styles.navButtonDisabled }
     : styles.navButton;
 
@@ -284,7 +291,9 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
         monthsForward,
         singleSelect: granularity === "M" || granularity === "Y" || granularity === "D",
         granularity,
-        currentDate: currentDateStr
+        currentDate: currentDateStr,
+        minDate: minDate ? toISOInput(minDate) : undefined,
+        maxDate: maxDate ? toISOInput(maxDate) : undefined
       }
     ).then((result: powerbi.extensibility.visual.ModalDialogResult) => {
       if (result.actionId === powerbi.DialogAction.OK) {
@@ -374,8 +383,8 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
           title={granularity === "Y" ? "5 años atrás" : "Año anterior"}
           type="button"
           onClick={handlePrevYear}
-          style={disabled ? { ...styles.yearNavButton, ...styles.navButtonDisabled } : styles.yearNavButton}
-          disabled={disabled}
+          style={isPrevDisabled ? { ...styles.yearNavButton, ...styles.navButtonDisabled } : styles.yearNavButton}
+          disabled={isPrevDisabled}
           aria-label="Ir al año anterior"
         >
           <DoubleChevronLeft />
@@ -387,7 +396,7 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
           type="button"
           onClick={handlePrev}
           style={prevButtonStyle}
-          disabled={disabled}
+          disabled={isPrevDisabled}
           aria-label="Período anterior"
         >
           <ChevronLeft />
@@ -415,8 +424,8 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
           title={`Período siguiente (${granularity})`}
           type="button"
           onClick={handleNext}
-          style={prevButtonStyle}
-          disabled={disabled}
+          style={isNextDisabled ? { ...styles.navButton, ...styles.navButtonDisabled } : styles.navButton}
+          disabled={isNextDisabled}
           aria-label="Período siguiente"
         >
           <ChevronRight />
@@ -427,8 +436,8 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
           title={granularity === "Y" ? "5 años adelante" : "Año siguiente"}
           type="button"
           onClick={handleNextYear}
-          style={disabled ? { ...styles.yearNavButton, ...styles.navButtonDisabled } : styles.yearNavButton}
-          disabled={disabled}
+          style={isNextDisabled ? { ...styles.yearNavButton, ...styles.navButtonDisabled } : styles.yearNavButton}
+          disabled={isNextDisabled}
           aria-label="Ir al año siguiente"
         >
           <DoubleChevronRight />

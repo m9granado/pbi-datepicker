@@ -23,6 +23,8 @@ export interface MonthPickerInitialState {
   singleSelect?: boolean;
   granularity?: GranularityMode;
   currentDate?: string;
+  minDate?: string;
+  maxDate?: string;
 }
 
 const MonthPickerContent: React.FC<{
@@ -130,6 +132,9 @@ const MonthPickerContent: React.FC<{
       : 'Selecciona uno o más meses';
   };
 
+  const minDateObj = initialState.minDate ? new Date(initialState.minDate + "T00:00:00") : undefined;
+  const maxDateObj = initialState.maxDate ? new Date(initialState.maxDate + "T23:59:59.999") : undefined;
+
   return (
     <div style={{
       fontFamily: 'Segoe UI, Arial, sans-serif',
@@ -173,6 +178,8 @@ const MonthPickerContent: React.FC<{
             selectedYears={selectedYear !== undefined ? [selectedYear] : []}
             onSelectYear={handleSelectYear}
             currentYear={new Date().getFullYear()}
+            minDate={minDateObj}
+            maxDate={maxDateObj}
           />
         )}
 
@@ -190,6 +197,8 @@ const MonthPickerContent: React.FC<{
             selectedDate={selectedDate}
             onSelectDate={handleSelectDate}
             initialDate={initialDateObj}
+            minDate={minDateObj}
+            maxDate={maxDateObj}
           />
         )}
       </div>
