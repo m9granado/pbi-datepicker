@@ -227,8 +227,8 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
     return formatMonthYear(targetDate, 'es-CL');
   };
 
-  const isPrevDisabled = disabled || (minDate && activeFrom && activeFrom <= minDate);
-  const isNextDisabled = disabled || (maxDate && activeTo && activeTo >= maxDate);
+  const isPrevDisabled = disabled || (minDate && activeTo && activeTo <= minDate);
+  const isNextDisabled = disabled || (maxDate && activeFrom && activeFrom >= maxDate);
 
   const prevButtonStyle = isPrevDisabled
     ? { ...styles.navButton, ...styles.navButtonDisabled }

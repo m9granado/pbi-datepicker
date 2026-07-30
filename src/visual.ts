@@ -55,6 +55,10 @@ export class Visual implements IVisual {
   private formattingSettingsService: FormattingSettingsService;
   private formattingSettings: DateXFormattingSettingsModel;
 
+  private cachedMinDate?: Date;
+  private cachedMaxDate?: Date;
+  private cachedTargetKey?: string;
+
   constructor(options: VisualConstructorOptions) {
     this.host = options.host;
     this.container = document.createElement("div");
@@ -89,14 +93,6 @@ export class Visual implements IVisual {
     );
 
     const dv = options.dataViews && options.dataViews[0];
-    const category = dv && dv.categorical && dv.categorical.categories && dv.categorical.categories[0];
-    const dataBounds = extractDataMinMax(category as any);
-
-    // Extract date restrictions (manual settings take precedence if specified, otherwise fall back to dataset bounds)
-    const manualMinDate = this.formattingSettings.restrictionsCard.minDate.value;
-    const manualMaxDate = this.formattingSettings.restrictionsCard.maxDate.value;
-    const min = manualMinDate ? new Date(manualMinDate + "T00:00:00") : dataBounds.minDate;
-    const max = manualMaxDate ? new Date(manualMaxDate + "T23:59:59.999") : dataBounds.maxDate;
 
     // Extract column target from dataView metadata
     let target: { table: string; column: string } | undefined;
@@ -115,6 +111,28 @@ export class Visual implements IVisual {
       }
     } catch {}
 
+    const targetKey = target ? `${target.table}.${target.column}` : "";
+    if (targetKey !== this.cachedTargetKey) {
+      this.cachedTargetKey = targetKey;
+      this.cachedMinDate = undefined;
+      this.cachedMaxDate = undefined;
+    }
+
+    const category = dv && dv.categorical && dv.categorical.categories && dv.categorical.categories[0];
+    const dataBounds = extractDataMinMax(category as any);
+
+    if (dataBounds.minDate && (!this.cachedMinDate || dataBounds.minDate < this.cachedMinDate)) {
+      this.cachedMinDate = dataBounds.minDate;
+    }
+    if (dataBounds.maxDate && (!this.cachedMaxDate || dataBounds.maxDate > this.cachedMaxDate)) {
+      this.cachedMaxDate = dataBounds.maxDate;
+    }
+
+    // Extract date restrictions (manual settings take precedence if specified, otherwise fall back to dataset bounds)
+    const manualMinDate = this.formattingSettings.restrictionsCard.minDate.value;
+    const manualMaxDate = this.formattingSettings.restrictionsCard.maxDate.value;
+    const min = manualMinDate ? new Date(manualMinDate + "T00:00:00") : this.cachedMinDate;
+    const max = manualMaxDate ? new Date(manualMaxDate + "T23:59:59.999") : this.cachedMaxDate;
     // Resolve font family
     const fontPresetValue = (this.formattingSettings.generalCard.fontPreset.value?.value as string) || "";
     const customFontFamily = this.formattingSettings.generalCard.fontFamily.value;
