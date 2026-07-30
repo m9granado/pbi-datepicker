@@ -3,7 +3,7 @@ import powerbi from "powerbi-visuals-api";
 import DialogConstructorOptions = powerbi.extensibility.visual.DialogConstructorOptions;
 import * as React from "react";
 import * as ReactDOM from "react-dom";
-import { MonthGrid, buildMonthItems } from "../components/MonthGrid";
+import { MonthGrid, buildMonthItems, buildMonthItemsInRange } from "../components/MonthGrid";
 import { YearGrid } from "../components/YearGrid";
 import { DayPickerGrid } from "../components/DayPickerGrid";
 import { GranularityMode } from "../components/GranularitySelector";
@@ -49,21 +49,35 @@ const MonthPickerContent: React.FC<{
     granularity === "D" ? initialDateObj : undefined
   );
 
+  const minDateObj = initialState.minDate ? new Date(initialState.minDate + "T00:00:00") : undefined;
+  const maxDateObj = initialState.maxDate ? new Date(initialState.maxDate + "T23:59:59.999") : undefined;
+
+  // When a minDate/maxDate restriction is configured, the visible list is
+  // clamped exactly to that range instead of the default today-anchored
+  // window — showing unreachable years/months (grayed out) outside the
+  // configured bounds is just confusing clutter.
   const years = React.useMemo(() => {
     const currentYear = new Date().getFullYear();
-    const startYear = currentYear - Math.floor((initialState.monthsBack || 36) / 12);
-    const endYear = currentYear + Math.ceil((initialState.monthsForward || 6) / 12);
+    const defaultStart = currentYear - Math.floor((initialState.monthsBack || 36) / 12);
+    const defaultEnd = currentYear + Math.ceil((initialState.monthsForward || 6) / 12);
+    const startYear = minDateObj ? minDateObj.getFullYear() : defaultStart;
+    const endYear = maxDateObj ? maxDateObj.getFullYear() : defaultEnd;
     const yrs: number[] = [];
     for (let y = endYear; y >= startYear; y--) {
       yrs.push(y);
     }
     return yrs;
-  }, [initialState.monthsBack, initialState.monthsForward]);
+  }, [initialState.monthsBack, initialState.monthsForward, initialState.minDate, initialState.maxDate]);
 
-  const months = React.useMemo(
-    () => buildMonthItems(initialState.monthsBack ?? 36, initialState.monthsForward ?? 6),
-    [initialState.monthsBack, initialState.monthsForward]
-  );
+  const months = React.useMemo(() => {
+    if (minDateObj || maxDateObj) {
+      const now = new Date();
+      const defaultStart = new Date(now.getFullYear(), now.getMonth() - (initialState.monthsBack ?? 36), 1);
+      const defaultEnd = new Date(now.getFullYear(), now.getMonth() + (initialState.monthsForward ?? 6), 1);
+      return buildMonthItemsInRange(minDateObj || defaultStart, maxDateObj || defaultEnd);
+    }
+    return buildMonthItems(initialState.monthsBack ?? 36, initialState.monthsForward ?? 6);
+  }, [initialState.monthsBack, initialState.monthsForward, initialState.minDate, initialState.maxDate]);
 
   // Handlers for Year mode
   const handleSelectYear = (year: number) => {
@@ -131,9 +145,6 @@ const MonthPickerContent: React.FC<{
       ? `${selectedMonths.length} mes${selectedMonths.length > 1 ? 'es' : ''} seleccionado${selectedMonths.length > 1 ? 's' : ''}`
       : 'Selecciona uno o más meses';
   };
-
-  const minDateObj = initialState.minDate ? new Date(initialState.minDate + "T00:00:00") : undefined;
-  const maxDateObj = initialState.maxDate ? new Date(initialState.maxDate + "T23:59:59.999") : undefined;
 
   return (
     <div style={{

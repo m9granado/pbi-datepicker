@@ -29,6 +29,33 @@ export const buildMonthItems = (monthsBack: number, monthsForward: number): Mont
   return months.sort((a, b) => (a.year !== b.year ? b.year - a.year : a.month - b.month));
 };
 
+// Builds the month list directly between two dates (inclusive), rather than
+// walking a fixed count of months back/forward from today. Used when a
+// minDate/maxDate restriction is configured, so the list shows exactly the
+// allowed months instead of a today-anchored window with unreachable/
+// grayed-out entries at the edges.
+export const buildMonthItemsInRange = (start: Date, end: Date): MonthGridItem[] => {
+  const months: MonthGridItem[] = [];
+  let year = start.getFullYear();
+  let month = start.getMonth();
+  const endYear = end.getFullYear();
+  const endMonth = end.getMonth();
+
+  while (year < endYear || (year === endYear && month <= endMonth)) {
+    const date = new Date(year, month, 1);
+    const value = `${year}-${(month + 1).toString().padStart(2, '0')}`;
+    const label = new Intl.DateTimeFormat('es-CL', { month: 'short' }).format(date);
+    months.push({ value, label, year, month });
+    month++;
+    if (month > 11) {
+      month = 0;
+      year++;
+    }
+  }
+
+  return months.sort((a, b) => (a.year !== b.year ? b.year - a.year : a.month - b.month));
+};
+
 export const getTodayMonthValue = (): string => {
   const now = new Date();
   return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;

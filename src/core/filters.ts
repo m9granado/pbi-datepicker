@@ -7,7 +7,6 @@ export interface ColumnTarget { table: string; column: string }
 export interface FilterCtx {
   host: powerbi.extensibility.visual.IVisualHost;
   target: ColumnTarget;
-  category?: powerbi.DataViewCategoryColumn;
 }
 
 export { DateRange };

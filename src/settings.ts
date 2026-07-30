@@ -145,6 +145,7 @@ class RestrictionsSettingsCard extends formattingSettings.SimpleCard {
   minDate = new formattingSettings.TextInput({
     name: "minDate",
     displayName: "Minimum Date",
+    description: "Format must be exactly YYYY-MM-DD (e.g. 2026-01-31). Leave empty for no minimum.",
     value: "",
     placeholder: "YYYY-MM-DD"
   });
@@ -152,8 +153,9 @@ class RestrictionsSettingsCard extends formattingSettings.SimpleCard {
   maxDate = new formattingSettings.TextInput({
     name: "maxDate",
     displayName: "Maximum Date",
+    description: "Exclusive: enter the day AFTER the last day you want to allow (e.g. 2030-01-01 allows data through 2029-12-31). Format YYYY-MM-DD. Leave empty for no maximum.",
     value: "",
-    placeholder: "YYYY-MM-DD"
+    placeholder: "YYYY-MM-DD (exclusivo)"
   });
 
   slices: formattingSettings.Slice[] = [

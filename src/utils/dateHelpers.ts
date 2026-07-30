@@ -18,6 +18,31 @@ export const toISOInput = (d?: Date): string => {
 };
 
 /**
+ * Parse a "YYYY-MM-DD" string (the format pane's Minimum/Maximum Date inputs
+ * are free-text) into a local-midnight Date. Anything that isn't a strict,
+ * calendar-valid YYYY-MM-DD returns undefined instead of an Invalid Date —
+ * `new Date("garbage")` silently produces an Invalid Date whose comparisons
+ * (`<`, `>`) are always false, which used to corrupt every min/max check
+ * downstream without any visible error.
+ */
+export const parseISODateInput = (value?: string): Date | undefined => {
+  if (!value) return undefined;
+  const match = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value.trim());
+  if (!match) return undefined;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return undefined;
+
+  const d = new Date(year, month - 1, day, 0, 0, 0, 0);
+  // Reject dates that overflowed (e.g. 2026-02-30 rolls into March)
+  if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) return undefined;
+
+  return d;
+};
+
+/**
  * Format a date as D/M/YYYY (e.g., 15/2/2024)
  */
 export const formatDateDMY = (d: Date): string => {

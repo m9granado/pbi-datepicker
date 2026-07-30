@@ -8,6 +8,7 @@ import { createRoot, Root } from "react-dom/client";
 import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel";
 import { DateXFormattingSettingsModel } from "./settings";
 import { App, AppProps } from "./ui/App";
+import { parseISODateInput, toEndOfDay, addDays, ensureValidDateRange } from "./utils/dateHelpers";
 
 function mapPreset(preset?: string): string | undefined {
   switch ((preset || '').toLowerCase()) {
@@ -18,36 +19,6 @@ function mapPreset(preset?: string): string | undefined {
   }
 }
 
-function extractDataMinMax(category?: powerbi.DataViewCategoryColumn): { minDate?: Date; maxDate?: Date } {
-  if (!category || !category.values || category.values.length === 0) {
-    return {};
-  }
-  let minTime = Infinity;
-  let maxTime = -Infinity;
-
-  for (const val of category.values) {
-    if (val === null || val === undefined) continue;
-    let d: Date;
-    if (val instanceof Date) {
-      d = val;
-    } else if (typeof val === 'string' || typeof val === 'number') {
-      d = new Date(val);
-    } else {
-      continue;
-    }
-    const time = d.getTime();
-    if (!isNaN(time)) {
-      if (time < minTime) minTime = time;
-      if (time > maxTime) maxTime = time;
-    }
-  }
-
-  const minDate = minTime !== Infinity ? new Date(minTime) : undefined;
-  const maxDate = maxTime !== -Infinity ? new Date(maxTime) : undefined;
-
-  return { minDate, maxDate };
-}
-
 export class Visual implements IVisual {
   private host: powerbi.extensibility.visual.IVisualHost;
   private container: HTMLElement;
@@ -55,17 +26,13 @@ export class Visual implements IVisual {
   private formattingSettingsService: FormattingSettingsService;
   private formattingSettings: DateXFormattingSettingsModel;
 
-  private cachedMinDate?: Date;
-  private cachedMaxDate?: Date;
-  private cachedTargetKey?: string;
-
   constructor(options: VisualConstructorOptions) {
     this.host = options.host;
     this.container = document.createElement("div");
     this.container.style.width = "100%";
     this.container.style.height = "100%";
     options.element.appendChild(this.container);
-    
+
     // Support Power BI native right-click context menu
     this.container.addEventListener("contextmenu", (event: MouseEvent) => {
       const selectionId = this.host.createSelectionIdBuilder().createSelectionId();
@@ -80,7 +47,7 @@ export class Visual implements IVisual {
 
     // Initialize formatting settings service
     this.formattingSettingsService = new FormattingSettingsService();
-    
+
     // Initialize formatting settings with defaults
     this.formattingSettings = new DateXFormattingSettingsModel();
   }
@@ -111,28 +78,20 @@ export class Visual implements IVisual {
       }
     } catch {}
 
-    const targetKey = target ? `${target.table}.${target.column}` : "";
-    if (targetKey !== this.cachedTargetKey) {
-      this.cachedTargetKey = targetKey;
-      this.cachedMinDate = undefined;
-      this.cachedMaxDate = undefined;
-    }
+    // Date restrictions: manual only (format pane), no auto-detection from
+    // table data — that path was unreliable and hard to reason about.
+    // minDate is inclusive (the typed day is the first valid day). maxDate
+    // is EXCLUSIVE (the typed day is the first day NOT allowed, so the last
+    // valid day is maxDate - 1) — e.g. typing 2030-01-01 allows data through
+    // 2029-12-31. This lets users type round calendar boundaries instead of
+    // having to compute "last day of the year/month" by hand.
+    // If the user swaps them by mistake, ensureValidDateRange corrects it
+    // instead of silently locking the visual.
+    const manualMinDate = parseISODateInput(this.formattingSettings.restrictionsCard.minDate.value);
+    const manualMaxDay = parseISODateInput(this.formattingSettings.restrictionsCard.maxDate.value);
+    const manualMaxDate = manualMaxDay ? toEndOfDay(addDays(manualMaxDay, -1)) : undefined;
+    const { from: min, to: max } = ensureValidDateRange(manualMinDate, manualMaxDate);
 
-    const category = dv && dv.categorical && dv.categorical.categories && dv.categorical.categories[0];
-    const dataBounds = extractDataMinMax(category as any);
-
-    if (dataBounds.minDate && (!this.cachedMinDate || dataBounds.minDate < this.cachedMinDate)) {
-      this.cachedMinDate = dataBounds.minDate;
-    }
-    if (dataBounds.maxDate && (!this.cachedMaxDate || dataBounds.maxDate > this.cachedMaxDate)) {
-      this.cachedMaxDate = dataBounds.maxDate;
-    }
-
-    // Extract date restrictions (manual settings take precedence if specified, otherwise fall back to dataset bounds)
-    const manualMinDate = this.formattingSettings.restrictionsCard.minDate.value;
-    const manualMaxDate = this.formattingSettings.restrictionsCard.maxDate.value;
-    const min = manualMinDate ? new Date(manualMinDate + "T00:00:00") : this.cachedMinDate;
-    const max = manualMaxDate ? new Date(manualMaxDate + "T23:59:59.999") : this.cachedMaxDate;
     // Resolve font family
     const fontPresetValue = (this.formattingSettings.generalCard.fontPreset.value?.value as string) || "";
     const customFontFamily = this.formattingSettings.generalCard.fontFamily.value;
@@ -145,7 +104,6 @@ export class Visual implements IVisual {
         maxDate: max,
         target: target,
         mode: "filter",
-        category: category as any,
         showLog: this.formattingSettings.generalCard.showLog.value,
         fontSize: this.formattingSettings.generalCard.fontSize.value,
         fontFamily: resolvedFamily,

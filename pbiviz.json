@@ -4,7 +4,7 @@
     "displayName": "DateX",
     "guid": "pbiDatePickerPopupCF01",
     "visualClassName": "Visual",
-    "version": "2.9.7.0",
+    "version": "2.9.10.0",
     "description": "DateX: Selector de rango de fechas con presets",
     "supportUrl": "https://support.example.com",
     "gitHubUrl": ""

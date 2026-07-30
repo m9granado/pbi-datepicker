@@ -18,7 +18,6 @@ export interface AppProps {
   maxDate?: Date;
   target: ColumnTarget | undefined;
   mode: "filter" | "highlight";
-  category?: powerbi.DataViewCategoryColumn;
   showLog?: boolean;
   fontSize?: number;
   fontFamily?: string;
