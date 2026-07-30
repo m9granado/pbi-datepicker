@@ -81,7 +81,8 @@ export const App: React.FC<AppProps> = (props) => {
     navigatePeriod,
     navigateYear,
     setGranularityMode,
-    applyMonthsFromDialog
+    applyMonthsFromDialog,
+    applyPeriodResultFromDialog
   } = useDateFilter({
     host: props.host,
     target,
@@ -169,16 +170,17 @@ export const App: React.FC<AppProps> = (props) => {
           showThisPeriod={showThisPeriod}
           showPrevPeriod={showPrevPeriod}
           periodContrastColor={periodContrastColor}
-          onPresetClick={applyPreset}
+          onPresetClick={(presetId) => applyPreset(presetId, effectiveGranularity)}
           onGranularityChange={setGranularityMode}
-          onNavigatePeriod={navigatePeriod}
-          onNavigateYear={navigateYear}
+          onNavigatePeriod={(dir) => navigatePeriod(dir, effectiveGranularity)}
+          onNavigateYear={(dir) => navigateYear(dir, effectiveGranularity)}
           selectedMonths={state.selectedMonths}
           showSelectionBadge={showMonthSelectionBadge}
           disabled={!target}
           onPrevMonth={() => navigateMonth(-1)}
           onNextMonth={() => navigateMonth(1)}
           onMonthsSelected={applyMonthsFromDialog}
+          onPeriodResultSelected={applyPeriodResultFromDialog}
           monthsBack={36}
           monthsForward={6}
         />

@@ -6,6 +6,7 @@ import { formatDateDMY, ensureValidDateRange } from "../utils/dateHelpers";
 
 import { GranularityMode } from "../components/GranularitySelector";
 import { DatePickerDialogResult } from "../dialogs/DatePickerDialog";
+import { PeriodPickerResult } from "../dialogs/MonthPickerDialog";
 
 export type FilterMode = "range" | "preset" | "navigation" | "multimonth";
 
@@ -31,13 +32,14 @@ export interface UseDateFilterReturn {
 
   // Actions
   setDateRange: (from?: Date, to?: Date) => void;
-  applyPreset: (presetId: PresetId) => void;
+  applyPreset: (presetId: PresetId, overrideGranularity?: GranularityMode) => void;
   clearFilter: () => void;
   navigateMonth: (direction: 1 | -1) => void;
-  navigatePeriod: (direction: 1 | -1) => void;
-  navigateYear: (direction: 1 | -1) => void;
+  navigatePeriod: (direction: 1 | -1, overrideGranularity?: GranularityMode) => void;
+  navigateYear: (direction: 1 | -1, overrideGranularity?: GranularityMode) => void;
   setGranularityMode: (mode: GranularityMode) => void;
   applyMonthsFromDialog: (months: string[]) => void;
+  applyPeriodResultFromDialog: (result: PeriodPickerResult) => void;
   applyDialogResult: (result: DatePickerDialogResult) => void;
 
   // Helpers
@@ -81,9 +83,9 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
     }
   }, [host, target, addLog]);
 
-  const applyPreset = React.useCallback((presetId: PresetId) => {
+  const applyPreset = React.useCallback((presetId: PresetId, overrideGranularity?: GranularityMode) => {
     setState(prev => {
-      const currentGranularity = prev.granularity || "M";
+      const currentGranularity = overrideGranularity || prev.granularity || "M";
       const range = getRange(presetId, currentGranularity);
 
       if (target) {
@@ -93,11 +95,13 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
 
       return {
         ...prev,
+        granularity: currentGranularity,
         mode: "preset",
         from: range.from,
         to: range.to,
         presetId,
-        navMonth: range.from
+        navMonth: range.from,
+        selectedMonths: []
       };
     });
   }, [host, target, addLog]);
@@ -195,16 +199,16 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
     });
   }, [host, target, addLog]);
 
-  const navigatePeriod = React.useCallback((direction: 1 | -1) => {
+  const navigatePeriod = React.useCallback((direction: 1 | -1, overrideGranularity?: GranularityMode) => {
     setState(prev => {
-      const granularity = prev.granularity || "M";
+      const granularity = overrideGranularity || prev.granularity || "M";
       const refDate = prev.from || prev.navMonth || new Date();
       let from: Date;
       let to: Date;
 
       if (granularity === "Y") {
         const newYear = refDate.getFullYear() + direction;
-        from = new Date(newYear, 0, 1);
+        from = new Date(newYear, 0, 1, 0, 0, 0, 0);
         to = new Date(newYear, 11, 31, 23, 59, 59, 999);
       } else if (granularity === "D") {
         const newDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate() + direction);
@@ -214,7 +218,7 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
         // Month (M)
         const newMonthDate = new Date(refDate.getFullYear(), refDate.getMonth() + direction, 1);
         const lastDay = new Date(newMonthDate.getFullYear(), newMonthDate.getMonth() + 1, 0).getDate();
-        from = new Date(newMonthDate.getFullYear(), newMonthDate.getMonth(), 1);
+        from = new Date(newMonthDate.getFullYear(), newMonthDate.getMonth(), 1, 0, 0, 0, 0);
         to = new Date(newMonthDate.getFullYear(), newMonthDate.getMonth(), lastDay, 23, 59, 59, 999);
       }
 
@@ -225,6 +229,7 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
 
       return {
         ...prev,
+        granularity,
         mode: "navigation",
         from,
         to,
@@ -234,16 +239,16 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
     });
   }, [host, target, addLog]);
 
-  const navigateYear = React.useCallback((direction: 1 | -1) => {
+  const navigateYear = React.useCallback((direction: 1 | -1, overrideGranularity?: GranularityMode) => {
     setState(prev => {
-      const granularity = prev.granularity || "M";
+      const granularity = overrideGranularity || prev.granularity || "M";
       const refDate = prev.from || prev.navMonth || new Date();
       let from: Date;
       let to: Date;
 
       if (granularity === "Y") {
         const newYear = refDate.getFullYear() + (direction * 5);
-        from = new Date(newYear, 0, 1);
+        from = new Date(newYear, 0, 1, 0, 0, 0, 0);
         to = new Date(newYear, 11, 31, 23, 59, 59, 999);
       } else if (granularity === "D") {
         const newMonthDate = new Date(refDate.getFullYear(), refDate.getMonth() + direction, refDate.getDate());
@@ -254,7 +259,7 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
         const newYear = refDate.getFullYear() + direction;
         const month = refDate.getMonth();
         const lastDay = new Date(newYear, month + 1, 0).getDate();
-        from = new Date(newYear, month, 1);
+        from = new Date(newYear, month, 1, 0, 0, 0, 0);
         to = new Date(newYear, month, lastDay, 23, 59, 59, 999);
       }
 
@@ -265,6 +270,7 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
 
       return {
         ...prev,
+        granularity,
         mode: "navigation",
         from,
         to,
@@ -284,6 +290,27 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
       return;
     }
 
+    if (months.length === 1) {
+      const [year, month] = months[0].split('-').map(Number);
+      const firstDay = new Date(year, month - 1, 1, 0, 0, 0, 0);
+      const lastDay = new Date(year, month, 0, 23, 59, 59, 999);
+      if (target) {
+        applyDateBetween({ host, target }, firstDay, lastDay);
+        addLog(`🗓️ Mes seleccionado: ${months[0]}`);
+      }
+      setState(prev => ({
+        ...prev,
+        selectedMonths: months,
+        mode: "navigation",
+        granularity: "M",
+        from: firstDay,
+        to: lastDay,
+        navMonth: firstDay,
+        presetId: undefined
+      }));
+      return;
+    }
+
     const ranges: DateRange[] = months.map(monthStr => {
       const [year, month] = monthStr.split('-').map(Number);
       const firstDay = new Date(year, month - 1, 1);
@@ -298,6 +325,48 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
 
     setState(prev => ({ ...prev, selectedMonths: months, mode: "multimonth" }));
   }, [host, target, addLog]);
+
+  const applyPeriodResultFromDialog = React.useCallback((result: PeriodPickerResult) => {
+    if (result.granularity === "Y" && result.selectedYear !== undefined) {
+      const year = result.selectedYear;
+      const from = new Date(year, 0, 1, 0, 0, 0, 0);
+      const to = new Date(year, 11, 31, 23, 59, 59, 999);
+      if (target) {
+        applyDateBetween({ host, target }, from, to);
+        addLog(`📅 Año seleccionado desde modal: ${year}`);
+      }
+      setState(prev => ({
+        ...prev,
+        granularity: "Y",
+        mode: "navigation",
+        from,
+        to,
+        presetId: undefined,
+        navMonth: from,
+        selectedMonths: []
+      }));
+    } else if (result.granularity === "D" && result.selectedDate !== undefined) {
+      const d = new Date(result.selectedDate + "T00:00:00");
+      const from = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+      const to = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+      if (target) {
+        applyDateBetween({ host, target }, from, to);
+        addLog(`📅 Día seleccionado desde modal: ${formatDateDMY(from)}`);
+      }
+      setState(prev => ({
+        ...prev,
+        granularity: "D",
+        mode: "navigation",
+        from,
+        to,
+        presetId: undefined,
+        navMonth: from,
+        selectedMonths: []
+      }));
+    } else {
+      applyMonthsFromDialog(result.selectedMonths || []);
+    }
+  }, [host, target, addLog, applyMonthsFromDialog]);
 
   const applyDialogResult = React.useCallback((result: DatePickerDialogResult) => {
     switch (result.mode) {
@@ -330,6 +399,7 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
     navigateYear,
     setGranularityMode,
     applyMonthsFromDialog,
+    applyPeriodResultFromDialog,
     applyDialogResult,
     addLog
   };

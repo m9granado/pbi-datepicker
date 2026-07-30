@@ -4,36 +4,74 @@ import DialogConstructorOptions = powerbi.extensibility.visual.DialogConstructor
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import { MonthGrid, buildMonthItems } from "../components/MonthGrid";
+import { YearGrid } from "../components/YearGrid";
+import { DayPickerGrid } from "../components/DayPickerGrid";
+import { GranularityMode } from "../components/GranularitySelector";
+import { toISOInput } from "../utils/dateHelpers";
 
-// Implements the month-picker as a native Power BI host dialog (see
-// https://learn.microsoft.com/power-bi/developer/visuals/create-display-dialog-box)
-// instead of an in-visual popover. Custom visuals run in a sandboxed iframe
-// that content can never escape (no CSS/portal trick gets around this) -
-// a host dialog is rendered by Power BI itself, above the whole report, with
-// the background grayed out, which is the only supported way to get a true
-// "modal over everything" for a custom visual.
+export interface PeriodPickerResult {
+  selectedMonths?: string[];
+  selectedYear?: number;
+  selectedDate?: string;
+  granularity?: GranularityMode;
+}
 
-interface MonthPickerInitialState {
+export interface MonthPickerInitialState {
   selectedMonths?: string[];
   monthsBack?: number;
   monthsForward?: number;
   singleSelect?: boolean;
+  granularity?: GranularityMode;
+  currentDate?: string;
 }
 
 const MonthPickerContent: React.FC<{
   initialState: MonthPickerInitialState;
-  onChange: (selectedMonths: string[]) => void;
+  onChange: (result: PeriodPickerResult) => void;
 }> = ({ initialState, onChange }) => {
-  const [selected, setSelected] = React.useState<string[]>(initialState.selectedMonths || []);
+  const granularity = initialState.granularity || "M";
   const isSingle = initialState.singleSelect ?? false;
+
+  // Year mode state
+  const initialYear = initialState.currentDate ? new Date(initialState.currentDate).getFullYear() : new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = React.useState<number | undefined>(
+    granularity === "Y" ? initialYear : undefined
+  );
+
+  // Month mode state
+  const [selectedMonths, setSelectedMonths] = React.useState<string[]>(initialState.selectedMonths || []);
+
+  // Day mode state
+  const initialDateObj = initialState.currentDate ? new Date(initialState.currentDate) : new Date();
+  const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
+    granularity === "D" ? initialDateObj : undefined
+  );
+
+  const years = React.useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const startYear = currentYear - Math.floor((initialState.monthsBack || 36) / 12);
+    const endYear = currentYear + Math.ceil((initialState.monthsForward || 6) / 12);
+    const yrs: number[] = [];
+    for (let y = endYear; y >= startYear; y--) {
+      yrs.push(y);
+    }
+    return yrs;
+  }, [initialState.monthsBack, initialState.monthsForward]);
 
   const months = React.useMemo(
     () => buildMonthItems(initialState.monthsBack ?? 36, initialState.monthsForward ?? 6),
     [initialState.monthsBack, initialState.monthsForward]
   );
 
-  const toggle = (value: string) => {
-    setSelected(prev => {
+  // Handlers for Year mode
+  const handleSelectYear = (year: number) => {
+    setSelectedYear(year);
+    onChange({ selectedYear: year, granularity: "Y" });
+  };
+
+  // Handlers for Month mode
+  const toggleMonth = (value: string) => {
+    setSelectedMonths(prev => {
       let next: string[];
       if (isSingle) {
         next = prev.includes(value) ? [] : [value];
@@ -42,26 +80,54 @@ const MonthPickerContent: React.FC<{
           ? prev.filter(v => v !== value)
           : [...prev, value].sort();
       }
-      onChange(next);
+      onChange({ selectedMonths: next, granularity: "M" });
       return next;
     });
   };
 
-  const toggleYear = (yearValues: string[]) => {
-    if (isSingle) return; // Disallow multi-year selection in single selection mode
-    setSelected(prev => {
+  const toggleYearInMonthView = (yearValues: string[]) => {
+    if (isSingle) return;
+    setSelectedMonths(prev => {
       const allSelected = yearValues.every(v => prev.includes(v));
       const next = allSelected
         ? prev.filter(v => !yearValues.includes(v))
         : Array.from(new Set([...prev, ...yearValues])).sort();
-      onChange(next);
+      onChange({ selectedMonths: next, granularity: "M" });
       return next;
     });
   };
 
+  // Handlers for Day mode
+  const handleSelectDate = (date: Date) => {
+    setSelectedDate(date);
+    onChange({ selectedDate: toISOInput(date), granularity: "D" });
+  };
+
   const clear = () => {
-    setSelected([]);
-    onChange([]);
+    if (granularity === "Y") {
+      setSelectedYear(undefined);
+      onChange({ selectedYear: undefined, granularity: "Y" });
+    } else if (granularity === "D") {
+      setSelectedDate(undefined);
+      onChange({ selectedDate: undefined, granularity: "D" });
+    } else {
+      setSelectedMonths([]);
+      onChange({ selectedMonths: [], granularity: "M" });
+    }
+  };
+
+  const getHeaderLabel = (): string => {
+    if (granularity === "Y") {
+      return selectedYear ? `Año ${selectedYear} seleccionado` : 'Selecciona un año';
+    }
+    if (granularity === "D") {
+      return selectedDate
+        ? `Día ${new Intl.DateTimeFormat('es-CL', { day: 'numeric', month: 'short', year: 'numeric' }).format(selectedDate)}`
+        : 'Selecciona un día';
+    }
+    return selectedMonths.length > 0
+      ? `${selectedMonths.length} mes${selectedMonths.length > 1 ? 'es' : ''} seleccionado${selectedMonths.length > 1 ? 's' : ''}`
+      : 'Selecciona uno o más meses';
   };
 
   return (
@@ -82,11 +148,7 @@ const MonthPickerContent: React.FC<{
         borderBottom: '1px solid #E5E5EA',
         flexShrink: 0
       }}>
-        <strong>
-          {selected.length > 0
-            ? `${selected.length} mes${selected.length > 1 ? 'es' : ''} seleccionado${selected.length > 1 ? 's' : ''}`
-            : 'Selecciona uno o más meses'}
-        </strong>
+        <strong>{getHeaderLabel()}</strong>
         <button
           type="button"
           onClick={clear}
@@ -105,7 +167,31 @@ const MonthPickerContent: React.FC<{
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px' }}>
-        <MonthGrid months={months} selected={selected} onToggle={toggle} onToggleYear={toggleYear} />
+        {granularity === "Y" && (
+          <YearGrid
+            years={years}
+            selectedYears={selectedYear !== undefined ? [selectedYear] : []}
+            onSelectYear={handleSelectYear}
+            currentYear={new Date().getFullYear()}
+          />
+        )}
+
+        {granularity === "M" && (
+          <MonthGrid
+            months={months}
+            selected={selectedMonths}
+            onToggle={toggleMonth}
+            onToggleYear={toggleYearInMonthView}
+          />
+        )}
+
+        {granularity === "D" && (
+          <DayPickerGrid
+            selectedDate={selectedDate}
+            onSelectDate={handleSelectDate}
+            initialDate={initialDateObj}
+          />
+        )}
       </div>
 
       <div style={{
@@ -128,14 +214,25 @@ export class MonthPickerDialog {
     const host = options.host;
     const state = (initialState || {}) as MonthPickerInitialState;
 
-    // Seed the result immediately so pressing the host's OK button before
-    // touching anything just re-applies the incoming selection unchanged.
-    host.setResult({ selectedMonths: state.selectedMonths || [] });
+    const initialGranularity = state.granularity || "M";
+    let initialResult: PeriodPickerResult = { granularity: initialGranularity };
+
+    if (initialGranularity === "Y") {
+      const initialYear = state.currentDate ? new Date(state.currentDate).getFullYear() : new Date().getFullYear();
+      initialResult.selectedYear = initialYear;
+    } else if (initialGranularity === "D") {
+      const initialDateStr = state.currentDate ? state.currentDate.split('T')[0] : toISOInput(new Date());
+      initialResult.selectedDate = initialDateStr;
+    } else {
+      initialResult.selectedMonths = state.selectedMonths || [];
+    }
+
+    host.setResult(initialResult);
 
     ReactDOM.render(
       React.createElement(MonthPickerContent, {
         initialState: state,
-        onChange: (selectedMonths: string[]) => host.setResult({ selectedMonths })
+        onChange: (result: PeriodPickerResult) => host.setResult(result)
       }),
       options.element
     );

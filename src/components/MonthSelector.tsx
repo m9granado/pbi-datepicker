@@ -2,7 +2,7 @@ import * as React from "react";
 import powerbi from "powerbi-visuals-api";
 import { formatMonthYear, isRangeMatch } from "../utils/dateHelpers";
 import { GranularitySelector, GranularityMode } from "./GranularitySelector";
-import { MonthPickerDialog } from "../dialogs/MonthPickerDialog";
+import { MonthPickerDialog, PeriodPickerResult } from "../dialogs/MonthPickerDialog";
 import { PresetId, getRange } from "../core/presets";
 
 export interface MonthSelectorProps {
@@ -28,6 +28,7 @@ export interface MonthSelectorProps {
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onMonthsSelected: (months: string[]) => void;
+  onPeriodResultSelected?: (result: PeriodPickerResult) => void;
   monthsBack?: number;
   monthsForward?: number;
 }
@@ -186,6 +187,7 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
   onPrevMonth,
   onNextMonth,
   onMonthsSelected,
+  onPeriodResultSelected,
   monthsBack = 36,
   monthsForward = 6
 }) => {
@@ -203,8 +205,13 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
   const isPrevPeriodActive = activePresetId === "prevPeriod" || isRangeMatch(activeFrom, activeTo, prevRange.from, prevRange.to);
 
   const getDisplayText = (): string => {
-    if (selectedMonths.length > 0) {
-      return `${selectedMonths.length} mes${selectedMonths.length > 1 ? 'es' : ''}`;
+    if (selectedMonths.length > 1) {
+      return `${selectedMonths.length} meses`;
+    }
+    if (selectedMonths.length === 1) {
+      const [year, month] = selectedMonths[0].split('-').map(Number);
+      const targetDate = new Date(year, month - 1, 1);
+      return formatMonthYear(targetDate, 'es-CL');
     }
     const targetDate = navMonth || new Date();
     if (granularity === "Y") {
@@ -255,19 +262,38 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
   const handleOpenMonthPicker = () => {
     if (!dialogSupported) return;
 
+    const dialogTitle = granularity === "Y"
+      ? "Seleccionar Año"
+      : (granularity === "D" ? "Seleccionar Día" : "Seleccionar Mes");
+
+    const dialogHeight = granularity === "D" ? 380 : (granularity === "Y" ? 340 : 420);
+
+    const currentDateStr = (from || navMonth || new Date()).toISOString();
+
     host.openModalDialog(
       MonthPickerDialog.id,
       {
-        title: granularity === "Y" ? "Seleccionar Año" : "Seleccionar Mes",
-        size: { width: 320, height: 420 },
+        title: dialogTitle,
+        size: { width: 320, height: dialogHeight },
         position: { type: powerbi.VisualDialogPositionType.RelativeToVisual, left: 0, top: 30 },
         actionButtons: [powerbi.DialogAction.OK, powerbi.DialogAction.Cancel]
       },
-      { selectedMonths, monthsBack, monthsForward, singleSelect: granularity === "M" || granularity === "Y" }
+      {
+        selectedMonths,
+        monthsBack,
+        monthsForward,
+        singleSelect: granularity === "M" || granularity === "Y" || granularity === "D",
+        granularity,
+        currentDate: currentDateStr
+      }
     ).then((result: powerbi.extensibility.visual.ModalDialogResult) => {
       if (result.actionId === powerbi.DialogAction.OK) {
-        const resultState = result.resultState as { selectedMonths?: string[] } | undefined;
-        onMonthsSelected(resultState?.selectedMonths || []);
+        const resultState = result.resultState as PeriodPickerResult | undefined;
+        if (onPeriodResultSelected && resultState) {
+          onPeriodResultSelected(resultState);
+        } else if (resultState?.selectedMonths) {
+          onMonthsSelected(resultState.selectedMonths);
+        }
       }
     }).catch(() => {
     });
@@ -378,7 +404,7 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
             disabled={disabled || !dialogSupported}
           >
             {getDisplayText()}
-            {showSelectionBadge && selectedMonths.length > 0 && (
+            {showSelectionBadge && selectedMonths.length > 1 && (
               <span style={styles.selectionBadge}>{selectedMonths.length}</span>
             )}
           </button>
