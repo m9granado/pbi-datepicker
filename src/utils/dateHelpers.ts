@@ -191,3 +191,15 @@ export const ensureValidDateRange = (
   
   return { from, to, wasSwapped: false };
 };
+
+export const isSameDay = (d1?: Date, d2?: Date): boolean => {
+  if (!d1 || !d2) return false;
+  return d1.getFullYear() === d2.getFullYear() &&
+         d1.getMonth() === d2.getMonth() &&
+         d1.getDate() === d2.getDate();
+};
+
+export const isRangeMatch = (from1?: Date, to1?: Date, from2?: Date, to2?: Date): boolean => {
+  if (!from1 || !to1 || !from2 || !to2) return false;
+  return isSameDay(from1, from2) && isSameDay(to1, to2);
+};

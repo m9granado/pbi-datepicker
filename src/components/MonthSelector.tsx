@@ -1,13 +1,15 @@
 import * as React from "react";
 import powerbi from "powerbi-visuals-api";
-import { formatMonthYear } from "../utils/dateHelpers";
+import { formatMonthYear, isRangeMatch } from "../utils/dateHelpers";
 import { GranularitySelector, GranularityMode } from "./GranularitySelector";
 import { MonthPickerDialog } from "../dialogs/MonthPickerDialog";
-import { PresetId } from "../core/presets";
+import { PresetId, getRange } from "../core/presets";
 
 export interface MonthSelectorProps {
   host: powerbi.extensibility.visual.IVisualHost;
   navMonth?: Date;
+  from?: Date;
+  to?: Date;
   selectedMonths?: string[];
   showSelectionBadge?: boolean;
   disabled?: boolean;
@@ -164,6 +166,8 @@ const styles: { [key: string]: React.CSSProperties } = {
 export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
   host,
   navMonth,
+  from,
+  to,
   selectedMonths = [],
   showSelectionBadge = false,
   disabled = false,
@@ -187,6 +191,16 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
 }) => {
   const dialogSupported = host.hostCapabilities?.allowModalDialog !== false;
   const accentColor = periodContrastColor || "#2563EB";
+
+  const currentGranularity = granularity || "M";
+  const thisRange = getRange("thisPeriod", currentGranularity);
+  const prevRange = getRange("prevPeriod", currentGranularity);
+
+  const activeFrom = from || navMonth;
+  const activeTo = to || navMonth;
+
+  const isThisPeriodActive = activePresetId === "thisPeriod" || isRangeMatch(activeFrom, activeTo, thisRange.from, thisRange.to);
+  const isPrevPeriodActive = activePresetId === "prevPeriod" || isRangeMatch(activeFrom, activeTo, prevRange.from, prevRange.to);
 
   const getDisplayText = (): string => {
     if (selectedMonths.length > 0) {
@@ -270,7 +284,7 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
               onClick={() => onPresetClick("thisPeriod")}
               style={{
                 ...styles.quickPeriodButton,
-                ...(activePresetId === "thisPeriod" ? {
+                ...(isThisPeriodActive ? {
                   backgroundColor: accentColor,
                   color: '#FFFFFF',
                   borderColor: accentColor
@@ -294,7 +308,7 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
               onClick={() => onPresetClick("prevPeriod")}
               style={{
                 ...styles.quickPeriodButton,
-                ...(activePresetId === "prevPeriod" ? {
+                ...(isPrevPeriodActive ? {
                   backgroundColor: accentColor,
                   color: '#FFFFFF',
                   borderColor: accentColor

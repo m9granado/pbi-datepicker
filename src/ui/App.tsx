@@ -159,6 +159,8 @@ export const App: React.FC<AppProps> = (props) => {
         <MonthSelector
           host={props.host}
           navMonth={state.navMonth}
+          from={state.from}
+          to={state.to}
           granularity={effectiveGranularity}
           showGranularityYear={showGranularityYear}
           showGranularityMonth={showGranularityMonth}
