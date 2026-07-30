@@ -2,7 +2,7 @@
 
 A custom Power BI visual: a date range picker with quick presets, month/year multi-selection, and period-over-period comparisons (MTD vs PMTD, YoY, YTD vs YTD).
 
-📥 **[Descargar la versión `v2.9.2.0` en GitHub Releases](https://github.com/m9granado/pbi-datepicker/releases/tag/v2.9.2.0)** o descarga directa del archivo **[`pbiDatePickerPopupCF01.2.9.2.0.pbiviz`](./dist/pbiDatePickerPopupCF01.2.9.2.0.pbiviz)** — impórtalo directamente en Power BI Desktop o Service.
+📥 **[Descargar `pbiDatePickerPopupCF01.2.9.2.0.pbiviz` en GitHub Releases](https://github.com/m9granado/pbi-datepicker/releases/download/v2.9.2.0/pbiDatePickerPopupCF01.2.9.2.0.pbiviz)** — impórtalo directamente en Power BI Desktop o Service.
 
 ## Features
 
