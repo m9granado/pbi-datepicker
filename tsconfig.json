@@ -29,15 +29,11 @@
     "src/hooks/useClickOutside.ts",
     "src/components/DateInputs.tsx",
     "src/components/PresetButtons.tsx",
-    "src/components/ComparisonPanel.tsx",
     "src/components/MonthSelector.tsx",
     "src/components/ActivityLog.tsx",
     "src/components/FilterBadge.tsx",
-    "src/components/ComparisonBanner.tsx",
-    "src/components/ComparisonToggle.tsx",
     "src/components/MonthGrid.tsx",
     "src/dialogs/MonthPickerDialog.tsx",
-    "src/dialogs/ComparisonInfoDialog.tsx",
     "src/dialogs/DatePickerDialog.tsx",
     "src/types/images.d.ts"
   ]

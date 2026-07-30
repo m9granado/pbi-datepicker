@@ -3,55 +3,34 @@ import powerbi from "powerbi-visuals-api";
 import DialogConstructorOptions = powerbi.extensibility.visual.DialogConstructorOptions;
 import * as React from "react";
 import * as ReactDOM from "react-dom";
-import { PresetId, ComparisonId, getRange } from "../core/presets";
+import { PresetId, getRange } from "../core/presets";
 import { FilterMode } from "../hooks/useDateFilter";
-import { DateInputs, PresetButtons, ComparisonPanel, FilterBadge } from "../components";
+import { DateInputs, PresetButtons, FilterBadge } from "../components";
 import { MonthGrid, buildMonthItems } from "../components/MonthGrid";
 import { getDisplayToDate } from "../utils/dateHelpers";
-
-// Popup-mode content: the entire picker UI (range inputs, presets, months,
-// comparisons), rendered as a native Power BI host dialog instead of inline
-// in the visual's own (sandboxed, size-limited) canvas. See
-// https://learn.microsoft.com/power-bi/developer/visuals/create-display-dialog-box
-// This is what solves "el selector no se despliega": the dialog is painted
-// by the Power BI host itself, above the whole report, not by the visual.
 
 export interface DatePickerDialogInitialState {
   from?: string; // ISO date
   to?: string; // ISO date
   presetId?: PresetId;
-  comparisonId?: ComparisonId;
   selectedMonths?: string[];
   minDate?: string;
   maxDate?: string;
   enableDateInputs?: boolean;
   enableMonthNavigation?: boolean;
-  enableVersus?: boolean;
   monthsBack?: number;
   monthsForward?: number;
   visiblePresets?: {
-    today?: boolean;
-    yesterday?: boolean;
-    thisWeek?: boolean;
-    lastWeek?: boolean;
-    last7?: boolean;
-    last30?: boolean;
-    last90?: boolean;
-    thisMonth?: boolean;
-    prevMonth?: boolean;
-    thisYear?: boolean;
+    thisPeriod?: boolean;
+    prevPeriod?: boolean;
   };
-  showMTDvsPMTD?: boolean;
-  showYoY?: boolean;
-  showYTDvsYTD?: boolean;
 }
 
 export interface DatePickerDialogResult {
-  mode: "range" | "preset" | "comparison" | "months" | "clear";
+  mode: "range" | "preset" | "months" | "clear";
   from?: string;
   to?: string;
   presetId?: PresetId;
-  comparisonId?: ComparisonId;
   selectedMonths?: string[];
 }
 
@@ -63,28 +42,12 @@ interface LocalState {
   from?: Date;
   to?: Date;
   presetId?: PresetId;
-  comparisonId?: ComparisonId;
   selectedMonths?: string[];
 }
 
 const presetLabels: Record<PresetId, string> = {
-  today: "Hoy",
-  yesterday: "Ayer",
-  thisWeek: "Esta Semana",
-  lastWeek: "Semana Pasada",
-  last7: "Últimos 7 Días",
-  last30: "Últimos 30 Días",
-  last90: "Últimos 90 Días",
-  thisMonth: "Este Mes",
-  prevMonth: "Mes Pasado",
-  thisYear: "Este Año"
-};
-
-const comparisonLabels: Record<ComparisonId, string> = {
-  mtdVsPmtd: "MTD vs PMTD",
-  yoy: "YoY",
-  ytdVsYtd: "YTD vs YTD",
-  vsPrevious: "vs. Período Anterior"
+  thisPeriod: "Este Período",
+  prevPeriod: "Período Anterior"
 };
 
 const DatePickerDialogContent: React.FC<{
@@ -92,11 +55,10 @@ const DatePickerDialogContent: React.FC<{
   onChange: (result: DatePickerDialogResult) => void;
 }> = ({ initialState, onChange }) => {
   const [state, setState] = React.useState<LocalState>({
-    mode: initialState.selectedMonths?.length ? "multimonth" : (initialState.presetId ? "preset" : (initialState.comparisonId ? "comparison" : "range")),
+    mode: initialState.selectedMonths?.length ? "multimonth" : (initialState.presetId ? "preset" : "range"),
     from: parseISODate(initialState.from),
     to: parseISODate(initialState.to),
     presetId: initialState.presetId,
-    comparisonId: initialState.comparisonId,
     selectedMonths: initialState.selectedMonths || []
   });
 
@@ -106,19 +68,14 @@ const DatePickerDialogContent: React.FC<{
   );
 
   const handleRangeChange = (from?: Date, to?: Date) => {
-    setState({ mode: "range", from, to, presetId: undefined, comparisonId: undefined, selectedMonths: [] });
+    setState({ mode: "range", from, to, presetId: undefined, selectedMonths: [] });
     onChange({ mode: "range", from: toISO(from), to: toISO(to) });
   };
 
   const handlePresetClick = (presetId: PresetId) => {
     const range = getRange(presetId);
-    setState({ mode: "preset", from: range.from, to: range.to, presetId, comparisonId: undefined, selectedMonths: [] });
+    setState({ mode: "preset", from: range.from, to: range.to, presetId, selectedMonths: [] });
     onChange({ mode: "preset", presetId });
-  };
-
-  const handleComparisonClick = (comparisonId: ComparisonId) => {
-    setState({ mode: "comparison", from: undefined, to: undefined, presetId: undefined, comparisonId, selectedMonths: [] });
-    onChange({ mode: "comparison", comparisonId });
   };
 
   const handleMonthToggle = (value: string) => {
@@ -126,7 +83,7 @@ const DatePickerDialogContent: React.FC<{
       const current = prev.selectedMonths || [];
       const next = current.includes(value) ? current.filter(v => v !== value) : [...current, value].sort();
       onChange({ mode: "months", selectedMonths: next });
-      return { ...prev, mode: "multimonth", selectedMonths: next, presetId: undefined, comparisonId: undefined };
+      return { ...prev, mode: "multimonth", selectedMonths: next, presetId: undefined };
     });
   };
 
@@ -138,18 +95,17 @@ const DatePickerDialogContent: React.FC<{
         ? current.filter(v => !yearValues.includes(v))
         : Array.from(new Set([...current, ...yearValues])).sort();
       onChange({ mode: "months", selectedMonths: next });
-      return { ...prev, mode: "multimonth", selectedMonths: next, presetId: undefined, comparisonId: undefined };
+      return { ...prev, mode: "multimonth", selectedMonths: next, presetId: undefined };
     });
   };
 
   const handleClear = () => {
-    setState({ mode: "range", from: undefined, to: undefined, presetId: undefined, comparisonId: undefined, selectedMonths: [] });
+    setState({ mode: "range", from: undefined, to: undefined, presetId: undefined, selectedMonths: [] });
     onChange({ mode: "clear" });
   };
 
   const displayToDate = getDisplayToDate(state.to, state.presetId);
   const activePresetLabel = state.presetId ? presetLabels[state.presetId] : undefined;
-  const activeComparisonLabel = state.comparisonId ? comparisonLabels[state.comparisonId] : undefined;
 
   return (
     <div style={{
@@ -168,7 +124,6 @@ const DatePickerDialogContent: React.FC<{
         from={state.from}
         to={displayToDate}
         presetLabel={activePresetLabel}
-        comparisonLabel={activeComparisonLabel}
         selectedMonthsCount={state.selectedMonths?.length}
         onClear={handleClear}
       />
@@ -179,7 +134,6 @@ const DatePickerDialogContent: React.FC<{
           to={displayToDate}
           minDate={parseISODate(initialState.minDate)}
           maxDate={parseISODate(initialState.maxDate)}
-          disabled={state.comparisonId !== undefined}
           onFromChange={(d) => handleRangeChange(d, state.to)}
           onToChange={(d) => handleRangeChange(state.from, d)}
           onClear={handleClear}
@@ -199,16 +153,6 @@ const DatePickerDialogContent: React.FC<{
         </div>
       )}
 
-      {initialState.enableVersus && (
-        <ComparisonPanel
-          activeComparisonId={state.comparisonId}
-          showMTDvsPMTD={initialState.showMTDvsPMTD}
-          showYoY={initialState.showYoY}
-          showYTDvsYTD={initialState.showYTDvsYTD}
-          onComparisonClick={handleComparisonClick}
-        />
-      )}
-
       <div style={{ marginTop: 'auto', paddingTop: 8, fontSize: 11, color: '#999999' }}>
         Confirma con OK o descarta con Cancel.
       </div>
@@ -223,14 +167,10 @@ export class DatePickerDialog {
     const host = options.host;
     const state = (initialState || {}) as DatePickerDialogInitialState;
 
-    // Seed the result immediately so pressing OK before touching anything
-    // is a no-op that re-applies whatever was already selected.
     if (state.selectedMonths?.length) {
       host.setResult({ mode: "months", selectedMonths: state.selectedMonths });
     } else if (state.presetId) {
       host.setResult({ mode: "preset", presetId: state.presetId });
-    } else if (state.comparisonId) {
-      host.setResult({ mode: "comparison", comparisonId: state.comparisonId });
     } else {
       host.setResult({ mode: "range", from: state.from, to: state.to });
     }

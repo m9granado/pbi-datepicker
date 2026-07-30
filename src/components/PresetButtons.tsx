@@ -3,17 +3,10 @@ import { PresetId } from "../core/presets";
 
 export interface PresetButtonsProps {
   activePresetId?: PresetId;
+  contrastColor?: string;
   visiblePresets: {
-    today?: boolean;
-    yesterday?: boolean;
-    thisWeek?: boolean;
-    lastWeek?: boolean;
-    last7?: boolean;
-    last30?: boolean;
-    last90?: boolean;
-    thisMonth?: boolean;
-    prevMonth?: boolean;
-    thisYear?: boolean;
+    thisPeriod?: boolean;
+    prevPeriod?: boolean;
   };
   onPresetClick: (presetId: PresetId) => void;
 }
@@ -25,16 +18,8 @@ interface PresetConfig {
 }
 
 const presetConfig: PresetConfig[] = [
-  { id: "today", label: "Hoy", tooltip: "Filtrar solo el día de hoy" },
-  { id: "yesterday", label: "Ayer", tooltip: "Filtrar solo el día de ayer" },
-  { id: "thisWeek", label: "Esta Semana", tooltip: "Filtrar desde el domingo de esta semana hasta hoy" },
-  { id: "lastWeek", label: "Semana Pasada", tooltip: "Filtrar la semana completa anterior (domingo a sábado)" },
-  { id: "last7", label: "Últimos 7 Días", tooltip: "Filtrar los últimos 7 días incluyendo hoy" },
-  { id: "last30", label: "Últimos 30 Días", tooltip: "Filtrar los últimos 30 días incluyendo hoy" },
-  { id: "last90", label: "Últimos 90 Días", tooltip: "Filtrar los últimos 90 días incluyendo hoy" },
-  { id: "thisMonth", label: "Este Mes", tooltip: "Filtrar desde el 1° de este mes hasta el último día" },
-  { id: "prevMonth", label: "Mes Pasado", tooltip: "Filtrar el mes completo anterior" },
-  { id: "thisYear", label: "Este Año", tooltip: "Filtrar desde el 1° de enero hasta el 31 de diciembre" },
+  { id: "thisPeriod", label: "Este Período", tooltip: "Filtrar el período actual según la granularidad activa (Año/Mes/Día)" },
+  { id: "prevPeriod", label: "Período Anterior", tooltip: "Filtrar el período anterior según la granularidad activa (Año/Mes/Día)" },
 ];
 
 const styles: { [key: string]: React.CSSProperties } = {
@@ -76,6 +61,7 @@ const styles: { [key: string]: React.CSSProperties } = {
 
 export const PresetButtons: React.FC<PresetButtonsProps> = React.memo(({
   activePresetId,
+  contrastColor,
   visiblePresets,
   onPresetClick
 }) => {
@@ -85,13 +71,26 @@ export const PresetButtons: React.FC<PresetButtonsProps> = React.memo(({
 
   if (visibleButtons.length === 0) return null;
 
+  const accent = contrastColor || "#2563EB";
+
   return (
     <div style={styles.container} role="group" aria-label="Filtros rápidos de fecha">
       {visibleButtons.map(preset => {
         const isActive = activePresetId === preset.id;
-        const buttonStyle = isActive 
-          ? { ...styles.button, ...styles.buttonActive }
-          : styles.button;
+        const isPeriodPreset = preset.id === "thisPeriod" || preset.id === "prevPeriod";
+
+        let buttonStyle: React.CSSProperties = { ...styles.button };
+        if (isPeriodPreset) {
+          buttonStyle = {
+            ...buttonStyle,
+            borderColor: accent,
+            color: isActive ? "#FFFFFF" : accent,
+            backgroundColor: isActive ? accent : `${accent}15`,
+            fontWeight: 600
+          };
+        } else if (isActive) {
+          buttonStyle = { ...buttonStyle, ...styles.buttonActive };
+        }
 
         return (
           <button

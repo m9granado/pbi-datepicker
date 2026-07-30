@@ -4,7 +4,7 @@ import IVisual = powerbi.extensibility.visual.IVisual;
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import * as React from "react";
-import * as ReactDOM from "react-dom";
+import { createRoot, Root } from "react-dom/client";
 import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel";
 import { DateXFormattingSettingsModel } from "./settings";
 import { App, AppProps } from "./ui/App";
@@ -21,14 +21,29 @@ function mapPreset(preset?: string): string | undefined {
 export class Visual implements IVisual {
   private host: powerbi.extensibility.visual.IVisualHost;
   private container: HTMLElement;
+  private root: Root;
   private formattingSettingsService: FormattingSettingsService;
   private formattingSettings: DateXFormattingSettingsModel;
 
   constructor(options: VisualConstructorOptions) {
     this.host = options.host;
     this.container = document.createElement("div");
+    this.container.style.width = "100%";
+    this.container.style.height = "100%";
     options.element.appendChild(this.container);
     
+    // Support Power BI native right-click context menu
+    this.container.addEventListener("contextmenu", (event: MouseEvent) => {
+      const selectionId = this.host.createSelectionIdBuilder().createSelectionId();
+      if ((this.host as any).showContextMenu) {
+        (this.host as any).showContextMenu(selectionId, { x: event.clientX, y: event.clientY });
+      }
+      event.preventDefault();
+    });
+
+    // Initialize React 18 root
+    this.root = createRoot(this.container);
+
     // Initialize formatting settings service
     this.formattingSettingsService = new FormattingSettingsService();
     
@@ -40,7 +55,7 @@ export class Visual implements IVisual {
     // Populate formatting settings from dataView
     this.formattingSettings = this.formattingSettingsService.populateFormattingSettingsModel(
       DateXFormattingSettingsModel,
-      options.dataViews[0]
+      options.dataViews && options.dataViews[0] ? options.dataViews[0] : ({} as any)
     );
 
     const dv = options.dataViews && options.dataViews[0];
@@ -75,39 +90,23 @@ export class Visual implements IVisual {
     const customFontFamily = this.formattingSettings.generalCard.fontFamily.value;
     const resolvedFamily = customFontFamily || mapPreset(fontPresetValue);
 
-    ReactDOM.render(
+    this.root.render(
       React.createElement(App, {
         host: this.host,
-        buttonText: this.formattingSettings.generalCard.buttonText.value || "DateX",
-        displayMode: (this.formattingSettings.generalCard.displayMode.value?.value as "canvas" | "popup") || "canvas",
         minDate: min,
         maxDate: max,
         target: target,
         mode: "filter",
         category: category as any,
         showLog: this.formattingSettings.generalCard.showLog.value,
-        showButtonLabels: this.formattingSettings.generalCard.showButtonLabels.value,
-        showSelectedPeriodBadge: this.formattingSettings.generalCard.showSelectedPeriodBadge?.value ?? true,
         fontSize: this.formattingSettings.generalCard.fontSize.value,
         fontFamily: resolvedFamily,
         viewportHeight: options.viewport ? options.viewport.height : 300,
         viewportWidth: options.viewport ? options.viewport.width : 400,
         // Pass all preset visibility props
-        showToday: this.formattingSettings.presetsCard.showToday.value,
-        showYesterday: this.formattingSettings.presetsCard.showYesterday.value,
-        showThisWeek: this.formattingSettings.presetsCard.showThisWeek.value,
-        showLastWeek: this.formattingSettings.presetsCard.showLastWeek.value,
-        showLast7: this.formattingSettings.presetsCard.showLast7.value,
-        showLast30: this.formattingSettings.presetsCard.showLast30.value,
-        showLast90: this.formattingSettings.presetsCard.showLast90.value,
-        showThisMonth: this.formattingSettings.presetsCard.showThisMonth.value,
-        showPrevMonth: this.formattingSettings.presetsCard.showPrevMonth.value,
-        showThisYear: this.formattingSettings.presetsCard.showThisYear.value,
-        // Pass comparison props
-        enableVersus: this.formattingSettings.comparisonsCard.enableVersus.value,
-        showMTDvsPMTD: this.formattingSettings.comparisonsCard.showMTDvsPMTD.value,
-        showYoY: this.formattingSettings.comparisonsCard.showYoY.value,
-        showYTDvsYTD: this.formattingSettings.comparisonsCard.showYTDvsYTD.value,
+        showThisPeriod: this.formattingSettings.presetsCard.showThisPeriod.value,
+        showPrevPeriod: this.formattingSettings.presetsCard.showPrevPeriod.value,
+        periodContrastColor: this.formattingSettings.presetsCard.periodContrastColor.value?.value,
         // Pass navigation props
         enableDateInputs: this.formattingSettings.navigationCard.enableDateInputs.value,
         enableMonthNavigation: this.formattingSettings.navigationCard.enableMonthNavigation.value,
@@ -115,8 +114,7 @@ export class Visual implements IVisual {
         showGranularityMonth: this.formattingSettings.navigationCard.showGranularityMonth.value,
         showGranularityDay: this.formattingSettings.navigationCard.showGranularityDay.value,
         showMonthSelectionBadge: this.formattingSettings.navigationCard.showMonthSelectionBadge.value,
-      } as AppProps),
-      this.container
+      } as AppProps)
     );
   }
 
@@ -129,6 +127,6 @@ export class Visual implements IVisual {
   }
 
   public destroy() {
-    ReactDOM.unmountComponentAtNode(this.container);
+    this.root.unmount();
   }
 }

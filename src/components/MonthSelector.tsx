@@ -2,14 +2,8 @@ import * as React from "react";
 import powerbi from "powerbi-visuals-api";
 import { formatMonthYear } from "../utils/dateHelpers";
 import { GranularitySelector, GranularityMode } from "./GranularitySelector";
-import { ComparisonToggle } from "./ComparisonToggle";
 import { MonthPickerDialog } from "../dialogs/MonthPickerDialog";
-
-const vsPreviousLabel = (granularity: GranularityMode): string => {
-  if (granularity === "Y") return "YoY";
-  if (granularity === "D") return "DoD";
-  return "MoM";
-};
+import { PresetId } from "../core/presets";
 
 export interface MonthSelectorProps {
   host: powerbi.extensibility.visual.IVisualHost;
@@ -21,15 +15,17 @@ export interface MonthSelectorProps {
   showGranularityYear?: boolean;
   showGranularityMonth?: boolean;
   showGranularityDay?: boolean;
+  activePresetId?: PresetId;
+  showThisPeriod?: boolean;
+  showPrevPeriod?: boolean;
+  periodContrastColor?: string;
+  onPresetClick?: (presetId: PresetId) => void;
   onGranularityChange?: (mode: GranularityMode) => void;
   onNavigatePeriod?: (direction: 1 | -1) => void;
+  onNavigateYear?: (direction: 1 | -1) => void;
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onMonthsSelected: (months: string[]) => void;
-  showComparisonToggle?: boolean;
-  comparePrevious?: boolean;
-  onToggleComparePrevious?: (enabled: boolean) => void;
-  // New year navigation props
   monthsBack?: number;
   monthsForward?: number;
 }
@@ -61,32 +57,56 @@ const DoubleChevronRight: React.FC = () => (
 );
 
 const styles: { [key: string]: React.CSSProperties } = {
-  granularityRow: {
+  singleRowContainer: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.25em',
-    flexWrap: 'nowrap',
-    marginBottom: '0.35em',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    gap: '0.4em',
+    flexWrap: 'wrap',
+    width: '100%',
+    margin: '0.25em 0'
   },
-  navigationRow: {
-    display: 'flex',
+  quickPeriodContainer: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    backgroundColor: '#F2F2F7',
+    borderRadius: '6px',
+    padding: '2px',
+    gap: '2px',
+    border: '1px solid #E5E5EA',
+    userSelect: 'none'
+  },
+  quickPeriodButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '0 6px',
+    height: '19px',
+    borderRadius: '4px',
+    border: '1px solid transparent',
+    fontSize: '0.65rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease-in-out',
+    outline: 'none'
+  },
+  periodNavigationBlock: {
+    display: 'inline-flex',
     alignItems: 'center',
     gap: '0.25em',
     flexWrap: 'nowrap',
-    marginBottom: '0.5em',
-    justifyContent: 'center'
+    whiteSpace: 'nowrap'
   },
   navButton: {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '2em',
-    height: '2em',
+    width: '1.8em',
+    height: '1.8em',
     border: '1px solid #E0E0E0',
     borderRadius: '4px',
     background: '#F8F8F8',
-    color: '#666666',
+    color: '#555555',
     cursor: 'pointer',
     transition: 'all 0.15s ease'
   },
@@ -99,23 +119,23 @@ const styles: { [key: string]: React.CSSProperties } = {
     alignItems: 'center',
     justifyContent: 'center',
     width: '1.8em',
-    height: '2em',
+    height: '1.8em',
     border: '1px solid #E0E0E0',
     borderRadius: '4px',
     background: '#FAFAFA',
-    color: '#888888',
+    color: '#777777',
     cursor: 'pointer',
     transition: 'all 0.15s ease',
-    fontSize: '0.9em'
+    fontSize: '0.85em'
   },
   monthDisplay: {
-    padding: '0.35em 0.7em',
+    padding: '0.3em 0.6em',
     border: '1px solid #E0E0E0',
     borderRadius: '4px',
     background: '#FAFAFA',
-    color: '#555555',
+    color: '#333333',
     fontFamily: 'inherit',
-    fontSize: '0.9em',
+    fontSize: '0.88em',
     fontWeight: 600,
     minWidth: '4.5em',
     textAlign: 'center',
@@ -151,18 +171,22 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
   showGranularityYear = true,
   showGranularityMonth = true,
   showGranularityDay = true,
+  activePresetId,
+  showThisPeriod = true,
+  showPrevPeriod = true,
+  periodContrastColor,
+  onPresetClick,
   onGranularityChange,
   onNavigatePeriod,
+  onNavigateYear,
   onPrevMonth,
   onNextMonth,
   onMonthsSelected,
-  showComparisonToggle = false,
-  comparePrevious = false,
-  onToggleComparePrevious,
   monthsBack = 36,
   monthsForward = 6
 }) => {
   const dialogSupported = host.hostCapabilities?.allowModalDialog !== false;
+  const accentColor = periodContrastColor || "#2563EB";
 
   const getDisplayText = (): string => {
     if (selectedMonths.length > 0) {
@@ -198,80 +222,126 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
     }
   };
 
-  // Opens the month picker as a true Power BI host dialog (grays the whole
-  // report and renders above everything), instead of an in-visual popover
-  // that would be clipped by the visual's own sandboxed bounding box.
+  const handlePrevYear = () => {
+    if (onNavigateYear) {
+      onNavigateYear(-1);
+    } else {
+      for (let i = 0; i < 12; i++) onPrevMonth();
+    }
+  };
+
+  const handleNextYear = () => {
+    if (onNavigateYear) {
+      onNavigateYear(1);
+    } else {
+      for (let i = 0; i < 12; i++) onNextMonth();
+    }
+  };
+
   const handleOpenMonthPicker = () => {
     if (!dialogSupported) return;
 
     host.openModalDialog(
       MonthPickerDialog.id,
       {
-        title: "Seleccionar Meses",
+        title: granularity === "Y" ? "Seleccionar Año" : "Seleccionar Mes",
         size: { width: 320, height: 420 },
         position: { type: powerbi.VisualDialogPositionType.RelativeToVisual, left: 0, top: 30 },
         actionButtons: [powerbi.DialogAction.OK, powerbi.DialogAction.Cancel]
       },
-      { selectedMonths, monthsBack, monthsForward }
+      { selectedMonths, monthsBack, monthsForward, singleSelect: granularity === "M" || granularity === "Y" }
     ).then((result: powerbi.extensibility.visual.ModalDialogResult) => {
-      // OK applies the latest selection; Cancel discards and leaves the
-      // current selection untouched.
       if (result.actionId === powerbi.DialogAction.OK) {
         const resultState = result.resultState as { selectedMonths?: string[] } | undefined;
         onMonthsSelected(resultState?.selectedMonths || []);
       }
     }).catch(() => {
-      // Dialog unavailable in this host environment (e.g. Embed/Dashboards) - no-op.
     });
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-      {/* Row 1: Granularity mode selector (Y / M / D) + quick "vs previous period" switch */}
-      {(onGranularityChange || (showComparisonToggle && onToggleComparePrevious)) && (
-        <div style={styles.granularityRow}>
-          {onGranularityChange && (
-            <GranularitySelector
-              activeMode={granularity}
-              onModeChange={onGranularityChange}
+    <div style={styles.singleRowContainer}>
+      {/* CP / PP Quick Period Selector */}
+      {(showThisPeriod || showPrevPeriod) && onPresetClick && (
+        <div style={styles.quickPeriodContainer} role="group" aria-label="Selección rápida de período">
+          {showThisPeriod && (
+            <button
+              type="button"
+              onClick={() => onPresetClick("thisPeriod")}
+              style={{
+                ...styles.quickPeriodButton,
+                ...(activePresetId === "thisPeriod" ? {
+                  backgroundColor: accentColor,
+                  color: '#FFFFFF',
+                  borderColor: accentColor
+                } : {
+                  backgroundColor: `${accentColor}18`,
+                  color: accentColor,
+                  borderColor: `${accentColor}40`
+                }),
+                ...(disabled ? styles.navButtonDisabled : {})
+              }}
               disabled={disabled}
-              showYear={showGranularityYear}
-              showMonth={showGranularityMonth}
-              showDay={showGranularityDay}
-            />
+              title="Este Período (CP) - según granularidad (Año/Mes/Día)"
+              aria-label="Este Período (CP)"
+            >
+              CP
+            </button>
           )}
-          {showComparisonToggle && onToggleComparePrevious && (
-            <ComparisonToggle
-              checked={comparePrevious}
-              label={vsPreviousLabel(granularity)}
-              onChange={onToggleComparePrevious}
+          {showPrevPeriod && (
+            <button
+              type="button"
+              onClick={() => onPresetClick("prevPeriod")}
+              style={{
+                ...styles.quickPeriodButton,
+                ...(activePresetId === "prevPeriod" ? {
+                  backgroundColor: accentColor,
+                  color: '#FFFFFF',
+                  borderColor: accentColor
+                } : {
+                  backgroundColor: `${accentColor}18`,
+                  color: accentColor,
+                  borderColor: `${accentColor}40`
+                }),
+                ...(disabled ? styles.navButtonDisabled : {})
+              }}
               disabled={disabled}
-            />
+              title="Período Anterior (PP) - según granularidad (Año/Mes/Día)"
+              aria-label="Período Anterior (PP)"
+            >
+              PP
+            </button>
           )}
         </div>
       )}
 
-      {/* Row 2: period navigation - < month > */}
-      <div style={styles.navigationRow}>
-        {/* Year navigation - previous year */}
+      {/* Granularity Selector (Y / M / D) */}
+      {onGranularityChange && (
+        <GranularitySelector
+          activeMode={granularity}
+          onModeChange={onGranularityChange}
+          disabled={disabled}
+          showYear={showGranularityYear}
+          showMonth={showGranularityMonth}
+          showDay={showGranularityDay}
+        />
+      )}
+
+      {/* Unbreakable Period Navigation Block: << < [ Month ] > >> */}
+      <div style={styles.periodNavigationBlock}>
+        {/* Year navigation - previous year / 5-year step (<<) */}
         <button
-          title="Año anterior"
+          title={granularity === "Y" ? "5 años atrás" : "Año anterior"}
           type="button"
-          onClick={() => {
-            if (onNavigatePeriod && granularity === "Y") {
-              onNavigatePeriod(-1);
-            } else {
-              for (let i = 0; i < 12; i++) onPrevMonth();
-            }
-          }}
-          style={styles.yearNavButton}
+          onClick={handlePrevYear}
+          style={disabled ? { ...styles.yearNavButton, ...styles.navButtonDisabled } : styles.yearNavButton}
           disabled={disabled}
           aria-label="Ir al año anterior"
         >
           <DoubleChevronLeft />
         </button>
 
-        {/* Navigation - previous period */}
+        {/* Period navigation - previous period (<) */}
         <button
           title={`Período anterior (${granularity})`}
           type="button"
@@ -283,13 +353,13 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
           <ChevronLeft />
         </button>
 
-        {/* Month selector - opens the native Power BI host dialog */}
+        {/* Period display button */}
         <div style={styles.dropdownContainer}>
           <button
             type="button"
             onClick={handleOpenMonthPicker}
             style={styles.monthDisplay}
-            title={dialogSupported ? "Click para seleccionar múltiples meses" : "Selección de múltiples meses no disponible en este entorno"}
+            title={dialogSupported ? "Click para seleccionar período" : "Selección de período no disponible"}
             aria-label="Selector de período"
             disabled={disabled || !dialogSupported}
           >
@@ -300,7 +370,7 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
           </button>
         </div>
 
-        {/* Navigation - next period */}
+        {/* Period navigation - next period (>) */}
         <button
           title={`Período siguiente (${granularity})`}
           type="button"
@@ -312,18 +382,12 @@ export const MonthSelector: React.FC<MonthSelectorProps> = React.memo(({
           <ChevronRight />
         </button>
 
-        {/* Year navigation - next year */}
+        {/* Year navigation - next year / 5-year step (>>) */}
         <button
-          title="Año siguiente"
+          title={granularity === "Y" ? "5 años adelante" : "Año siguiente"}
           type="button"
-          onClick={() => {
-            if (onNavigatePeriod && granularity === "Y") {
-              onNavigatePeriod(1);
-            } else {
-              for (let i = 0; i < 12; i++) onNextMonth();
-            }
-          }}
-          style={styles.yearNavButton}
+          onClick={handleNextYear}
+          style={disabled ? { ...styles.yearNavButton, ...styles.navButtonDisabled } : styles.yearNavButton}
           disabled={disabled}
           aria-label="Ir al año siguiente"
         >

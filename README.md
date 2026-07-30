@@ -2,17 +2,16 @@
 
 A custom Power BI visual: a date range picker with quick presets, month/year multi-selection, and period-over-period comparisons (MTD vs PMTD, YoY, YTD vs YTD).
 
-📥 **[Download the latest compiled `.pbiviz`](../../releases/latest)** — import it directly into Power BI Desktop or Service.
+📥 **[Descargar la última versión compilada (`v2.9.1.0`)](./dist/pbiDatePickerPopupCF01.2.9.1.0.pbiviz)** — impórtalo directamente en Power BI Desktop o Service.
 
 ## Features
 
-- **Manual date range** — from/to inputs with auto-swap if the user picks them backwards.
-- **Quick presets** — Today, Yesterday, This Week, Last Week, Last 7/30/90 Days, This Month, Previous Month, This Year (each individually togglable).
-- **Month/year navigation** — Y/M/D granularity switch (each option individually togglable) plus prev/next controls.
-- **Multi-month selection** — pick several months (or a whole year at once) through a native Power BI host dialog, so the picker isn't clipped by the visual's own bounding box.
-- **Period comparisons** — MTD vs PMTD, Year over Year, YTD vs YTD.
-- **Two display modes** — **Canvas** (always-expanded card, default) or **Popup** (a compact button that opens the full picker as a host dialog — useful when space on the report is tight).
-- **Configurable via the format pane** — fonts, date restrictions, which presets/comparisons/granularity options are visible, activity log, etc.
+- **Acción rápida CP & PP** — Botones inteligentes **CP** (Este Período: Año Actual / Mes Actual / Hoy) y **PP** (Período Anterior: Año Anterior / Mes Pasado / Ayer) situados junto a la selección de granularidad, adaptables automáticamente según Y/M/D y con color de contraste personalizable.
+- **Manual date range** — desde/hasta con auto-swap si las fechas se ingresan invertidas.
+- **Navegación por Año/Mes/Día** — conmutador de granularidad Y/M/D con navegación de períodos.
+- **Multi-month selection** — selección múltiple de meses o año completo mediante diálogo nativo de Power BI.
+- **Period comparisons** — MTD vs PMTD, Año contra Año (YoY), YTD vs YTD.
+- **Configurable via format pane** — colores de contraste, fuentes, restricciones de fecha y log de actividad.
 
 ## Installation
 

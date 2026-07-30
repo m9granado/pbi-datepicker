@@ -6,45 +6,10 @@ import { formattingSettings } from "powerbi-visuals-utils-formattingmodel";
 class GeneralSettingsCard extends formattingSettings.SimpleCard {
   name: string = "general";
   displayName: string = "General";
-  
-  buttonText = new formattingSettings.TextInput({
-    name: "buttonText",
-    displayName: "Button Text",
-    value: "DateX",
-    placeholder: "Enter button text"
-  });
-
-  displayMode = new formattingSettings.ItemDropdown({
-    name: "displayMode",
-    displayName: "Display Mode",
-    value: { value: "canvas", displayName: "Canvas (siempre visible)" },
-    items: [
-      { value: "canvas", displayName: "Canvas (siempre visible)" },
-      { value: "popup", displayName: "Popup (botón + diálogo)" }
-    ]
-  });
-
-  showLog = new formattingSettings.ToggleSwitch({
-    name: "showLog",
-    displayName: "Show Activity Log",
-    value: false
-  });
-
-  showButtonLabels = new formattingSettings.ToggleSwitch({
-    name: "showButtonLabels",
-    displayName: "Show Button Labels",
-    value: true
-  });
-
-  showSelectedPeriodBadge = new formattingSettings.ToggleSwitch({
-    name: "showSelectedPeriodBadge",
-    displayName: "Show Selected Period Badge",
-    value: true
-  });
 
   fontSize = new formattingSettings.NumUpDown({
     name: "fontSize",
-    displayName: "Font Size",
+    displayName: "Tamaño de Fuente",
     value: 12,
     options: {
       minValue: {
@@ -58,16 +23,9 @@ class GeneralSettingsCard extends formattingSettings.SimpleCard {
     }
   });
 
-  fontFamily = new formattingSettings.TextInput({
-    name: "fontFamily",
-    displayName: "Font Family",
-    value: "",
-    placeholder: "e.g., Segoe UI, Arial"
-  });
-
   fontPreset = new formattingSettings.ItemDropdown({
     name: "fontPreset",
-    displayName: "Font Preset",
+    displayName: "Fuente Predeterminada",
     value: { value: "", displayName: "Custom" },
     items: [
       { value: "", displayName: "Custom" },
@@ -77,13 +35,20 @@ class GeneralSettingsCard extends formattingSettings.SimpleCard {
     ]
   });
 
-  // Grouped for readability in the format pane: mode/text first, then
-  // display toggles, then typography, with the diagnostic log toggle last.
+  fontFamily = new formattingSettings.TextInput({
+    name: "fontFamily",
+    displayName: "Fuente Personalizada",
+    value: "",
+    placeholder: "ej: Segoe UI, Arial"
+  });
+
+  showLog = new formattingSettings.ToggleSwitch({
+    name: "showLog",
+    displayName: "Mostrar Registro de Actividad",
+    value: false
+  });
+
   slices: formattingSettings.Slice[] = [
-    this.displayMode,
-    this.buttonText,
-    this.showSelectedPeriodBadge,
-    this.showButtonLabels,
     this.fontPreset,
     this.fontFamily,
     this.fontSize,
@@ -99,7 +64,7 @@ class NavigationSettingsCard extends formattingSettings.SimpleCard {
   enableDateInputs = new formattingSettings.ToggleSwitch({
     name: "enableDateInputs",
     displayName: "Enable Date Input Fields",
-    value: true
+    value: false
   });
 
   enableMonthNavigation = new formattingSettings.ToggleSwitch({
@@ -132,8 +97,6 @@ class NavigationSettingsCard extends formattingSettings.SimpleCard {
     value: false
   });
 
-  // Grouped for readability: core toggles first, then the Y/M/D granularity
-  // options together (so it's clear they're a related set), badge last.
   slices: formattingSettings.Slice[] = [
     this.enableDateInputs,
     this.enableMonthNavigation,
@@ -149,114 +112,28 @@ class PresetsSettingsCard extends formattingSettings.SimpleCard {
   name: string = "presets";
   displayName: string = "Preset Filters";
 
-  showToday = new formattingSettings.ToggleSwitch({
-    name: "showToday",
-    displayName: "Show 'Today'",
-    value: false
-  });
-
-  showYesterday = new formattingSettings.ToggleSwitch({
-    name: "showYesterday",
-    displayName: "Show 'Yesterday'",
-    value: false
-  });
-
-  showThisWeek = new formattingSettings.ToggleSwitch({
-    name: "showThisWeek",
-    displayName: "Show 'This Week'",
-    value: false
-  });
-
-  showLastWeek = new formattingSettings.ToggleSwitch({
-    name: "showLastWeek",
-    displayName: "Show 'Last Week'",
-    value: false
-  });
-
-  showLast7 = new formattingSettings.ToggleSwitch({
-    name: "showLast7",
-    displayName: "Show 'Last 7 Days'",
-    value: false
-  });
-
-  showLast30 = new formattingSettings.ToggleSwitch({
-    name: "showLast30",
-    displayName: "Show 'Last 30 Days'",
-    value: false
-  });
-
-  showLast90 = new formattingSettings.ToggleSwitch({
-    name: "showLast90",
-    displayName: "Show 'Last 90 Days'",
-    value: false
-  });
-
-  showThisMonth = new formattingSettings.ToggleSwitch({
-    name: "showThisMonth",
-    displayName: "Show 'This Month'",
+  showThisPeriod = new formattingSettings.ToggleSwitch({
+    name: "showThisPeriod",
+    displayName: "Show 'This Period' (CP)",
     value: true
   });
 
-  showPrevMonth = new formattingSettings.ToggleSwitch({
-    name: "showPrevMonth",
-    displayName: "Show 'Previous Month'",
+  showPrevPeriod = new formattingSettings.ToggleSwitch({
+    name: "showPrevPeriod",
+    displayName: "Show 'Previous Period' (PP)",
     value: true
   });
 
-  showThisYear = new formattingSettings.ToggleSwitch({
-    name: "showThisYear",
-    displayName: "Show 'This Year'",
-    value: false
+  periodContrastColor = new formattingSettings.ColorPicker({
+    name: "periodContrastColor",
+    displayName: "Color de Botones CP/PP",
+    value: { value: "#2563EB" }
   });
 
   slices: formattingSettings.Slice[] = [
-    this.showToday,
-    this.showYesterday,
-    this.showThisWeek,
-    this.showLastWeek,
-    this.showLast7,
-    this.showLast30,
-    this.showLast90,
-    this.showThisMonth,
-    this.showPrevMonth,
-    this.showThisYear
-  ];
-}
-
-// Comparisons Settings Card
-class ComparisonsSettingsCard extends formattingSettings.SimpleCard {
-  name: string = "comparisons";
-  displayName: string = "Comparisons";
-
-  enableVersus = new formattingSettings.ToggleSwitch({
-    name: "enableVersus",
-    displayName: "Enable Comparison Mode",
-    value: false
-  });
-
-  showMTDvsPMTD = new formattingSettings.ToggleSwitch({
-    name: "showMTDvsPMTD",
-    displayName: "Show MTD vs PMTD",
-    value: true
-  });
-
-  showYoY = new formattingSettings.ToggleSwitch({
-    name: "showYoY",
-    displayName: "Show Year over Year",
-    value: false
-  });
-
-  showYTDvsYTD = new formattingSettings.ToggleSwitch({
-    name: "showYTDvsYTD",
-    displayName: "Show YTD vs YTD",
-    value: false
-  });
-
-  slices: formattingSettings.Slice[] = [
-    this.enableVersus,
-    this.showMTDvsPMTD,
-    this.showYoY,
-    this.showYTDvsYTD
+    this.showThisPeriod,
+    this.showPrevPeriod,
+    this.periodContrastColor
   ];
 }
 
@@ -290,14 +167,12 @@ export class DateXFormattingSettingsModel extends formattingSettings.Model {
   generalCard = new GeneralSettingsCard();
   navigationCard = new NavigationSettingsCard();
   presetsCard = new PresetsSettingsCard();
-  comparisonsCard = new ComparisonsSettingsCard();
   restrictionsCard = new RestrictionsSettingsCard();
 
   cards: formattingSettings.SimpleCard[] = [
     this.generalCard,
     this.navigationCard,
     this.presetsCard,
-    this.comparisonsCard,
     this.restrictionsCard
   ];
 }

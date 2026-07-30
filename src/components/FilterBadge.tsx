@@ -7,7 +7,6 @@ export interface FilterBadgeProps {
   from?: Date;
   to?: Date;
   presetLabel?: string;
-  comparisonLabel?: string;
   selectedMonthsCount?: number;
   onClear: () => void;
 }
@@ -87,7 +86,6 @@ export const FilterBadge: React.FC<FilterBadgeProps> = React.memo(({
   from,
   to,
   presetLabel,
-  comparisonLabel,
   selectedMonthsCount,
   onClear
 }) => {
@@ -101,10 +99,6 @@ export const FilterBadge: React.FC<FilterBadgeProps> = React.memo(({
     case 'preset':
       icon = <FilterIcon />;
       label = presetLabel || "Filtro preset";
-      break;
-    case 'comparison':
-      icon = <ComparisonIcon />;
-      label = comparisonLabel || "Comparación activa";
       break;
     case 'navigation':
       icon = <CalendarIcon />;

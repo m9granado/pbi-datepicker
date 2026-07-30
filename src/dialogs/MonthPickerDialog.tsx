@@ -17,6 +17,7 @@ interface MonthPickerInitialState {
   selectedMonths?: string[];
   monthsBack?: number;
   monthsForward?: number;
+  singleSelect?: boolean;
 }
 
 const MonthPickerContent: React.FC<{
@@ -24,6 +25,7 @@ const MonthPickerContent: React.FC<{
   onChange: (selectedMonths: string[]) => void;
 }> = ({ initialState, onChange }) => {
   const [selected, setSelected] = React.useState<string[]>(initialState.selectedMonths || []);
+  const isSingle = initialState.singleSelect ?? false;
 
   const months = React.useMemo(
     () => buildMonthItems(initialState.monthsBack ?? 36, initialState.monthsForward ?? 6),
@@ -32,15 +34,21 @@ const MonthPickerContent: React.FC<{
 
   const toggle = (value: string) => {
     setSelected(prev => {
-      const next = prev.includes(value)
-        ? prev.filter(v => v !== value)
-        : [...prev, value].sort();
+      let next: string[];
+      if (isSingle) {
+        next = prev.includes(value) ? [] : [value];
+      } else {
+        next = prev.includes(value)
+          ? prev.filter(v => v !== value)
+          : [...prev, value].sort();
+      }
       onChange(next);
       return next;
     });
   };
 
   const toggleYear = (yearValues: string[]) => {
+    if (isSingle) return; // Disallow multi-year selection in single selection mode
     setSelected(prev => {
       const allSelected = yearValues.every(v => prev.includes(v));
       const next = allSelected

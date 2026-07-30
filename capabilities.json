@@ -25,11 +25,7 @@
   "objects": {
     "general": {
       "properties": {
-        "buttonText": { "type": { "text": true } },
-        "displayMode": { "type": { "text": true } },
         "showLog": { "type": { "bool": true } },
-        "showButtonLabels": { "type": { "bool": true } },
-        "showSelectedPeriodBadge": { "type": { "bool": true } },
         "fontSize": { "type": { "formatting": { "fontSize": true } } },
         "fontFamily": { "type": { "text": true } },
         "fontPreset": { "type": { "text": true } }
@@ -47,26 +43,20 @@
     },
     "presets": {
       "properties": {
-        "showToday": { "type": { "bool": true } },
-        "showYesterday": { "type": { "bool": true } },
-        "showThisWeek": { "type": { "bool": true } },
-        "showLastWeek": { "type": { "bool": true } },
-        "showLast7": { "type": { "bool": true } },
-        "showLast30": { "type": { "bool": true } },
-        "showLast90": { "type": { "bool": true } },
-        "showThisMonth": { "type": { "bool": true } },
-        "showPrevMonth": { "type": { "bool": true } },
-        "showThisYear": { "type": { "bool": true } }
+        "showThisPeriod": { "type": { "bool": true } },
+        "showPrevPeriod": { "type": { "bool": true } },
+        "periodContrastColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
       }
     },
-    "comparisons": {
-      "properties": {
-        "enableVersus": { "type": { "bool": true } },
-        "showMTDvsPMTD": { "type": { "bool": true } },
-        "showYoY": { "type": { "bool": true } },
-        "showYTDvsYTD": { "type": { "bool": true } }
-      }
-    },
+
     "restrictions": {
       "properties": {
         "minDate": { "type": { "text": true } },
