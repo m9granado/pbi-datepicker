@@ -18,6 +18,7 @@ export interface AppProps {
   maxDate?: Date;
   target: ColumnTarget | undefined;
   targetDiagnostic?: string;
+  syncedRange?: { from: Date; to: Date; key: string };
   mode: "filter" | "highlight";
   showLog?: boolean;
   fontSize?: number;
@@ -56,6 +57,7 @@ export const App: React.FC<AppProps> = (props) => {
   const {
     target,
     targetDiagnostic,
+    syncedRange,
     minDate,
     maxDate,
     showLog,
@@ -90,7 +92,8 @@ export const App: React.FC<AppProps> = (props) => {
     minDate,
     maxDate,
     showLog,
-    targetDiagnostic
+    targetDiagnostic,
+    syncedRange
   });
 
   // Handle date input changes with auto-swap support

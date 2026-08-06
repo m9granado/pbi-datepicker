@@ -27,6 +27,7 @@ export interface UseDateFilterProps {
   maxDate?: Date;
   showLog?: boolean;
   targetDiagnostic?: string;
+  syncedRange?: { from: Date; to: Date; key: string };
 }
 
 export interface UseDateFilterReturn {
@@ -50,7 +51,7 @@ export interface UseDateFilterReturn {
 }
 
 export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn => {
-  const { host, target, minDate, maxDate, showLog, targetDiagnostic } = props;
+  const { host, target, minDate, maxDate, showLog, targetDiagnostic, syncedRange } = props;
 
   const [state, setState] = React.useState<FilterState>({ mode: "range" });
   const [logs, setLogs] = React.useState<string[]>([]);
@@ -70,6 +71,27 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
     console.warn(`[DateX] ${targetDiagnostic}`);
     addLog(targetDiagnostic);
   }, [targetDiagnostic, addLog]);
+
+  // Power BI provides the persisted filter when the visual is synced on a
+  // different report page. Mirror it in the picker UI without applying it again.
+  React.useEffect(() => {
+    setState(prev => {
+      if (!syncedRange) {
+        if (!prev.from && !prev.to) return prev;
+        return { ...prev, mode: "range", from: undefined, to: undefined, presetId: undefined, selectedMonths: [] };
+      }
+      if (prev.from?.getTime() === syncedRange.from.getTime() && prev.to?.getTime() === syncedRange.to.getTime()) return prev;
+      return {
+        ...prev,
+        mode: "range",
+        from: syncedRange.from,
+        to: syncedRange.to,
+        presetId: undefined,
+        navMonth: syncedRange.from,
+        selectedMonths: []
+      };
+    });
+  }, [syncedRange?.key]);
 
   const setDateRange = React.useCallback((from?: Date, to?: Date) => {
     const validRange = ensureValidDateRange(from, to);

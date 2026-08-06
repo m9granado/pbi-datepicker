@@ -22,6 +22,7 @@
       }
     }
   ],
+  "supportsSynchronizingFilterState": true,
   "objects": {
     "general": {
       "properties": {

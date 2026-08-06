@@ -10,6 +10,12 @@ import { DateXFormattingSettingsModel } from "./settings";
 import { App, AppProps } from "./ui/App";
 import { parseISODateInput, toEndOfDay, addDays, ensureValidDateRange } from "./utils/dateHelpers";
 
+interface SyncedDateRange {
+  from: Date;
+  to: Date;
+  key: string;
+}
+
 function mapPreset(preset?: string): string | undefined {
   switch ((preset || '').toLowerCase()) {
     case 'segoe':  return 'Segoe UI, SegoeUI, Arial, sans-serif';
@@ -40,6 +46,28 @@ function parseColumnTarget(queryName?: string): { table: string; column: string 
   }
 
   return undefined;
+}
+
+function parseFilterDate(value: unknown, endOfDay: boolean): Date | undefined {
+  if (typeof value !== "string") return undefined;
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (!match) return undefined;
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  if (date.getFullYear() !== Number(match[1]) || date.getMonth() !== Number(match[2]) - 1 || date.getDate() !== Number(match[3])) return undefined;
+  return endOfDay ? toEndOfDay(date) : date;
+}
+
+function getSyncedDateRange(dataView: any, target?: { table: string; column: string }): SyncedDateRange | undefined {
+  const stored = dataView?.metadata?.objects?.general?.filter;
+  const filter = Array.isArray(stored) ? stored[0] : stored;
+  if (!filter || filter.$schema !== "https://powerbi.com/product/schema#advanced") return undefined;
+  if (target && (filter.target?.table !== target.table || filter.target?.column !== target.column)) return undefined;
+
+  const from = parseFilterDate(filter.conditions?.find((c: any) => c.operator === "GreaterThanOrEqual")?.value, false);
+  const to = parseFilterDate(filter.conditions?.find((c: any) => c.operator === "LessThanOrEqual")?.value, true);
+  if (!from || !to) return undefined;
+  const key = `${from.getFullYear()}-${from.getMonth()}-${from.getDate()}|${to.getFullYear()}-${to.getMonth()}-${to.getDate()}`;
+  return { from, to, key };
 }
 
 export class Visual implements IVisual {
@@ -104,6 +132,7 @@ export class Visual implements IVisual {
       targetDiagnostic = "No se pudo leer la columna vinculada al rol Date.";
       console.warn("[DateX] Error resolving Date role target", error);
     }
+    const syncedRange = getSyncedDateRange(dv, target);
 
     // Date restrictions: manual only (format pane), no auto-detection from
     // table data — that path was unreliable and hard to reason about.
@@ -131,6 +160,7 @@ export class Visual implements IVisual {
         maxDate: max,
         target: target,
         targetDiagnostic,
+        syncedRange,
         mode: "filter",
         showLog: this.formattingSettings.generalCard.showLog.value,
         fontSize: this.formattingSettings.generalCard.fontSize.value,
