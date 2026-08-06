@@ -19,6 +19,29 @@ function mapPreset(preset?: string): string | undefined {
   }
 }
 
+function parseColumnTarget(queryName?: string): { table: string; column: string } | undefined {
+  if (!queryName) return undefined;
+
+  // DAX-style names such as 'Calendar Table'[Date] or Calendar[Date].
+  const bracketMatch = queryName.match(/^(?:'((?:[^']|'')+)'|([^\[]+))\[([^\]]+)\]$/);
+  if (bracketMatch) {
+    const table = (bracketMatch[1] || bracketMatch[2] || "").replace(/''/g, "'").trim();
+    const column = bracketMatch[3].trim();
+    if (table && column) return { table, column };
+  }
+
+  // Metadata normally supplies Entity.Property. Split at the last separator
+  // so entity names containing dots remain intact.
+  const separator = queryName.lastIndexOf(".");
+  if (separator > 0 && separator < queryName.length - 1) {
+    const table = queryName.slice(0, separator).trim();
+    const column = queryName.slice(separator + 1).trim();
+    if (table && column) return { table, column };
+  }
+
+  return undefined;
+}
+
 export class Visual implements IVisual {
   private host: powerbi.extensibility.visual.IVisualHost;
   private container: HTMLElement;
@@ -63,20 +86,24 @@ export class Visual implements IVisual {
 
     // Extract column target from dataView metadata
     let target: { table: string; column: string } | undefined;
+    let targetDiagnostic: string | undefined;
     try {
+      const categories: any[] = (dv && dv.categorical && dv.categorical.categories) || [];
+      const dateCategory: any = categories.find((category: any) => category.source?.roles?.date) || categories[0];
       const metaCols: any[] = (dv && dv.metadata && dv.metadata.columns) || [];
-      const roleCol: any = metaCols.find((col: any) => col.roles && (col.roles as any).date);
-      let qn: string | undefined = roleCol && roleCol.queryName;
-      if (!qn) {
-        const cat = dv && dv.categorical && dv.categorical.categories && dv.categorical.categories[0];
-        const src: any = cat && cat.source;
-        qn = src && src.queryName;
+      const roleCol: any = metaCols.find((col: any) => col.roles?.date);
+      const queryName = dateCategory?.source?.queryName || roleCol?.queryName;
+
+      target = parseColumnTarget(queryName);
+      if (!target) {
+        targetDiagnostic = queryName
+          ? `No se pudo interpretar la columna de fecha vinculada: ${queryName}.`
+          : "No se encontró una columna vinculada al rol Date.";
       }
-      if (qn) {
-        const parts = qn.split('.');
-        if (parts.length >= 2) target = { table: parts[0], column: parts[1] };
-      }
-    } catch {}
+    } catch (error) {
+      targetDiagnostic = "No se pudo leer la columna vinculada al rol Date.";
+      console.warn("[DateX] Error resolving Date role target", error);
+    }
 
     // Date restrictions: manual only (format pane), no auto-detection from
     // table data — that path was unreliable and hard to reason about.
@@ -103,6 +130,7 @@ export class Visual implements IVisual {
         minDate: min,
         maxDate: max,
         target: target,
+        targetDiagnostic,
         mode: "filter",
         showLog: this.formattingSettings.generalCard.showLog.value,
         fontSize: this.formattingSettings.generalCard.fontSize.value,

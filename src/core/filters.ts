@@ -30,16 +30,33 @@ export function applyDateBetween(ctx: FilterCtx, from: Date, to: Date) {
     conditions: [
       {
         operator: "GreaterThanOrEqual",
-        value: startOfDay.toISOString()
+        value: toPowerBIDateTime(startOfDay)
       },
       {
         operator: "LessThanOrEqual", 
-        value: endOfDay.toISOString()
+        value: toPowerBIDateTime(endOfDay)
       }
     ]
   };
 
   ctx.host.applyJsonFilter(filter, "general", "filter", powerbi.FilterAction.merge);
+}
+
+/**
+ * Power BI compares the serialized value to the model's date/date-time value.
+ * Keep the selected local calendar day in the ISO date portion instead of
+ * converting the local time to UTC (which would shift Chilean dates).
+ */
+function toPowerBIDateTime(date: Date): string {
+  return new Date(Date.UTC(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    date.getHours(),
+    date.getMinutes(),
+    date.getSeconds(),
+    date.getMilliseconds()
+  )).toISOString();
 }
 
 // Applies a filter for multiple, non-continuous date ranges 

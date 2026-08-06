@@ -17,6 +17,7 @@ export interface AppProps {
   minDate?: Date;
   maxDate?: Date;
   target: ColumnTarget | undefined;
+  targetDiagnostic?: string;
   mode: "filter" | "highlight";
   showLog?: boolean;
   fontSize?: number;
@@ -54,6 +55,7 @@ const resolveGranularity = (
 export const App: React.FC<AppProps> = (props) => {
   const {
     target,
+    targetDiagnostic,
     minDate,
     maxDate,
     showLog,
@@ -87,7 +89,8 @@ export const App: React.FC<AppProps> = (props) => {
     target,
     minDate,
     maxDate,
-    showLog
+    showLog,
+    targetDiagnostic
   });
 
   // Handle date input changes with auto-swap support
@@ -136,6 +139,7 @@ export const App: React.FC<AppProps> = (props) => {
         <div style={{ fontSize: '0.8em', opacity: 0.8 }}>
           Arrastra un campo de fecha al rol <strong>Date</strong> para activar el filtrado.
         </div>
+        {showLog && <ActivityLog logs={logs} />}
       </div>
     );
   }

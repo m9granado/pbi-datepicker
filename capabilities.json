@@ -25,6 +25,7 @@
   "objects": {
     "general": {
       "properties": {
+        "filter": { "type": { "filter": true } },
         "showLog": { "type": { "bool": true } },
         "fontSize": { "type": { "formatting": { "fontSize": true } } },
         "fontFamily": { "type": { "text": true } },

@@ -26,6 +26,7 @@ export interface UseDateFilterProps {
   minDate?: Date;
   maxDate?: Date;
   showLog?: boolean;
+  targetDiagnostic?: string;
 }
 
 export interface UseDateFilterReturn {
@@ -49,7 +50,7 @@ export interface UseDateFilterReturn {
 }
 
 export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn => {
-  const { host, target, minDate, maxDate, showLog } = props;
+  const { host, target, minDate, maxDate, showLog, targetDiagnostic } = props;
 
   const [state, setState] = React.useState<FilterState>({ mode: "range" });
   const [logs, setLogs] = React.useState<string[]>([]);
@@ -63,6 +64,12 @@ export const useDateFilter = (props: UseDateFilterProps): UseDateFilterReturn =>
     }).format(new Date());
     setLogs(prev => [...prev.slice(-99), `[${stamp}] ${msg}`]);
   }, [showLog]);
+
+  React.useEffect(() => {
+    if (!targetDiagnostic) return;
+    console.warn(`[DateX] ${targetDiagnostic}`);
+    addLog(targetDiagnostic);
+  }, [targetDiagnostic, addLog]);
 
   const setDateRange = React.useCallback((from?: Date, to?: Date) => {
     const validRange = ensureValidDateRange(from, to);
